@@ -1,0 +1,23 @@
+{
+  "name": "quickview",
+  "version": "0.0.1",
+  "description": "Web UI for a wide-column database",
+  "main": "main.js",
+  "scripts": {
+    "start": "node main.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheDevtop/quickview.git"
+  },
+  "author": "Thijs Haker",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/TheDevtop/quickview/issues"
+  },
+  "homepage": "https://github.com/TheDevtop/quickview#readme",
+  "dependencies": {
+    "express": "^5.3.0",
+    "express-handlebars": "^9.0.1"
+  }
+}
