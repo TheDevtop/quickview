@@ -1,10 +1,11 @@
+const http = require('node:http');
 const express = require('express');
 const { engine } = require('express-handlebars');
 const qt = require('./models/quicktable');
 const tc = require('./controllers/tables');
 
 const ops = ['=', '!=', '>', '>=', '<', '<=', 'CONTAINS', 'PREFIX', 'EXISTS', 'MISSING'];
-const types = ['string', 'int', 'float', 'bool'];
+const types = ['string', 'number', 'bool'];
 
 let addr = process.env.QUICKTABLE_URL ?? 'http://localhost:8080';
 let port = Number(process.env.PORT ?? 3000);
@@ -64,7 +65,7 @@ app.post('/connect', async (req, res) => {
 	try {
 		if (!/^https?:\/\/[^\s]+$/.test(url))
 			throw new Error('address must start with http:// or https://');
-		await qt.client(url).tables();
+		await qt.client(url).health();
 	} catch (err) {
 		return res.render('connect', { title: 'Connect', url, err: tc.fmterr(err) });
 	}
@@ -111,8 +112,30 @@ app.get('/tables/:table/rows/:row/columns/:column', tc.cell);
 app.post('/tables/:table/rows/:row/columns/:column', tc.setcell);
 app.post('/tables/:table/rows/:row/columns/:column/delete', tc.delcell);
 
+// fail renders the error page; it links back to the table the failed URL was under.
+function fail(req, res, status, msg) {
+	const reason = http.STATUS_CODES[status] ?? 'Error';
+	let table;
+	const m = /^\/tables\/([^/]+)/.exec(req.path);
+	if (m !== null) {
+		try {
+			table = decodeURIComponent(m[1]);
+		} catch {
+			table = undefined;
+		}
+	}
+	res.status(status).render('error', { title: `${status} ${reason}`, status, reason, msg, table, err: undefined });
+}
+
+app.use((req, res) => {
+	fail(req, res, 404, `There is no page at ${req.path}`);
+});
+
 app.use((err, req, res, next) => {
-	res.status(err.status ?? 500).render('error', { title: 'Error', table: req.params.table, err: undefined, failure: tc.fmterr(err) });
+	const status = err.status ?? 500;
+	if (status >= 500)
+		process.stderr.write(`quickview: ${req.method} ${req.path}: ${err.message}\n`);
+	fail(req, res, status, err.message);
 });
 
 // As PID 1 in a container, node gets no default signal handling.

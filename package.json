@@ -1,6 +1,6 @@
 {
   "name": "quickview",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Web UI for a wide-column database",
   "main": "main.js",
   "scripts": {

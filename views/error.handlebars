@@ -1,2 +1,8 @@
-<div role="alert" data-variant="danger">{{failure}}</div>
-<p><a href="{{#if table}}/tables/{{u table}}{{else}}/{{/if}}">‹ Back</a></p>
+<article>
+	<header><h3>{{status}} {{reason}}</h3></header>
+	<p>{{msg}}</p>
+	<footer>
+		{{#if table}}<a role="button" class="secondary" href="/tables/{{u table}}">‹ Back to {{table}}</a>{{/if}}
+		<a role="button" class="{{#if table}}ghost{{else}}secondary{{/if}}" href="/">Explorer</a>
+	</footer>
+</article>

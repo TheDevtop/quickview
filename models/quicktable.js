@@ -11,7 +11,7 @@ async function call(base, method, path, body) {
 
 	let res;
 	try {
-		res = await fetch(base + '/api/tables' + path, opts);
+		res = await fetch(base + path, opts);
 	} catch (err) {
 		const x = new Error(`cannot reach ${base}: ${err.cause?.code ?? err.message}`);
 		x.status = 502;
@@ -46,9 +46,10 @@ function rp(t, k) {
 // client binds the API to one server, since each browser picks its own.
 function client(base) {
 	base = base.replace(/\/+$/, '');
-	const c = (method, path, body) => call(base, method, path, body);
+	const c = (method, path, body) => call(base, method, '/api/tables' + path, body);
 	return {
 		base,
+		health: () => call(base, 'GET', '/health'),
 		tables: () => c('GET', ''),
 		drop: (t) => c('DELETE', tp(t)),
 		getcell: (t, k, col) => c('GET', rp(t, k) + '/columns/' + e(col)),

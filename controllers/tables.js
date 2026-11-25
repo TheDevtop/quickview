@@ -30,16 +30,13 @@ function rowurl(t, k) {
 function parse(type, raw) {
 	raw = raw ?? '';
 	switch (type) {
-	case 'int': {
+	case 'number': {
+		// Quicktable stores every number as a 64-bit float.
 		const n = Number(raw);
-		if (raw.trim() === '' || !Number.isInteger(n))
-			throw bad(`not an integer: "${raw}"`);
-		return n;
-	}
-	case 'float': {
-		const n = Number(raw);
-		if (raw.trim() === '' || Number.isNaN(n))
+		if (raw.trim() === '' || !Number.isFinite(n))
 			throw bad(`not a number: "${raw}"`);
+		if (Number.isInteger(n) && !Number.isSafeInteger(n))
+			throw bad(`integer out of range: "${raw}"`);
 		return n;
 	}
 	case 'bool':
@@ -57,7 +54,7 @@ function typeof_(v) {
 	if (typeof v === 'boolean')
 		return 'bool';
 	if (typeof v === 'number')
-		return Number.isInteger(v) ? 'int' : 'float';
+		return 'number';
 	return 'string';
 }
 
@@ -95,14 +92,20 @@ function cols(list) {
 	return m;
 }
 
+// newcols is cols for inserts: an empty insert returns a key but stores no row.
+function newcols(list) {
+	const m = cols(list);
+	if (Object.keys(m).length === 0)
+		throw bad('at least one column is required');
+	return m;
+}
+
 function blanks(n) {
 	return Array.from({ length: n }, () => ({ type: 'string' }));
 }
 
 // grid flattens [{rowKey, columns}] into a table with the union of all columns.
-// The live server sends query rows as {Key, Columns}, unlike docs/rest.md.
-function grid(t, list) {
-	const rows = list.map((r) => ({ rowKey: r.rowKey ?? r.Key, columns: r.columns ?? r.Columns }));
+function grid(t, rows) {
 	const names = [];
 	for (const r of rows)
 		for (const c of Object.keys(r.columns ?? {}))
@@ -170,7 +173,7 @@ async function create(req, res) {
 	try {
 		if (t === '')
 			throw bad('table name is required');
-		const r = await req.qt.insert(t, cols(req.body.cols));
+		const r = await req.qt.insert(t, newcols(req.body.cols));
 		back(res, rowurl(t, r.rowKey), undefined, `Created table ${t} with row ${r.rowKey}`);
 	} catch (err) {
 		back(res, '/new', err);
@@ -227,7 +230,7 @@ async function query(req, res) {
 async function insert(req, res) {
 	const t = req.params.table;
 	try {
-		const r = await req.qt.insert(t, cols(req.body.cols));
+		const r = await req.qt.insert(t, newcols(req.body.cols));
 		back(res, rowurl(t, r.rowKey), undefined, `Inserted row ${r.rowKey}`);
 	} catch (err) {
 		back(res, tableurl(t, 'insert'), err);
@@ -253,12 +256,10 @@ async function batch(req, res) {
 		}
 		v.reqbody = body;
 		v.result = await req.qt.batch(t, body);
-		if (b.action === 'get') {
-			const rows = Object.entries(v.result.rows ?? {}).map(([rowKey, columns]) => ({ rowKey, columns }));
-			v.grid = grid(t, rows);
-		}
 		if (b.action !== 'get')
-			v.msg = `Batch ${b.action} applied`;
+			return back(res, tableurl(t, 'batch'), undefined, `Batch ${b.action} applied`);
+		const rows = Object.entries(v.result.rows ?? {}).map(([rowKey, columns]) => ({ rowKey, columns }));
+		v.grid = grid(t, rows);
 	} catch (err) {
 		v.err = fmterr(err);
 	}
@@ -316,7 +317,7 @@ async function atomic(req, res) {
 			throw bad('column is required');
 		const body = { column: b.column };
 		if (b.op === 'incr')
-			body.delta = parse(b.type === 'float' ? 'float' : 'int', b.value);
+			body.delta = parse('number', b.value);
 		else
 			body.value = b.value ?? '';
 		const r = await req.qt.atomic(t, k, b.op, body);
