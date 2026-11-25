@@ -115,6 +115,10 @@ app.use((err, req, res, next) => {
 	res.status(err.status ?? 500).render('error', { title: 'Error', table: req.params.table, err: undefined, failure: tc.fmterr(err) });
 });
 
+// As PID 1 in a container, node gets no default signal handling.
+for (const sig of ['SIGINT', 'SIGTERM'])
+	process.on(sig, () => process.exit(0));
+
 app.listen(port, (err) => {
 	if (err !== undefined) {
 		process.stderr.write(`quickview: ${err.message}\n`);
