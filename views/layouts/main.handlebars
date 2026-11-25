@@ -4,19 +4,29 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{{title}} · Quickview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Roboto+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="/static/query-ui.css">
 <link rel="stylesheet" href="/static/app.css">
+<script src="/static/app.js" defer></script>
 </head>
 <body>
 <header class="bq-topbar">
-	<a class="brand" href="/">▦ Quickview</a>
-	<small class="addr" title="Quicktable server">{{base}}</small>
+	<a class="brand" href="/">Quickview</a>
+	{{#if base}}
+	<form method="post" action="/disconnect" class="bq-flex">
+		<small class="addr" title="Quicktable server">{{base}}</small>
+		<button type="submit" class="ghost">Disconnect</button>
+	</form>
+	{{/if}}
 </header>
-<div class="shell">
+<div class="shell{{#unless base}} bare{{/unless}}">
+	{{#if base}}
 	<aside>
 		<div class="explorer">
 			<h6>Explorer</h6>
-			<a href="/" role="button" class="ghost">+ Table</a>
+			<form action="/new"><button type="submit" class="ghost">+ Table</button></form>
 		</div>
 		<nav data-vertical aria-label="Tables">
 			<ul>
@@ -28,6 +38,7 @@
 			</ul>
 		</nav>
 	</aside>
+	{{/if}}
 	<main>
 		{{#if connerr}}<div role="alert" data-variant="danger">{{connerr}}</div>{{/if}}
 		{{#if err}}<div role="alert" data-variant="danger">{{err}}</div>{{/if}}

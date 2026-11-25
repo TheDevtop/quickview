@@ -1,7 +1,10 @@
-{{#each list}}
-<div class="cell-row">
-	<input name="{{concat ../n '[' @index '][name]'}}" placeholder="column" aria-label="Column">
-	<input name="{{concat ../n '[' @index '][value]'}}" placeholder="value" aria-label="Value">
-	{{> typesel n=(concat ../n '[' @index '][type]') t=type}}
+<div class="cols">
+	{{#each list}}
+	<div class="cell-row">
+		<input name="{{concat ../n '[' @index '][name]'}}" placeholder="column" aria-label="Column">
+		<input name="{{concat ../n '[' @index '][value]'}}" placeholder="value" aria-label="Value">
+		{{> typesel n=(concat ../n '[' @index '][type]') t=type}}
+	</div>
+	{{/each}}
 </div>
-{{/each}}
+<button type="button" class="ghost" data-add>+ Column</button>

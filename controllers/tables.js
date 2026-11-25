@@ -1,5 +1,3 @@
-const qt = require('../models/quicktable');
-
 const pagesize = 50;
 const nvalue = ['EXISTS', 'MISSING'];
 const atomics = ['incr', 'append', 'prepend'];
@@ -160,7 +158,11 @@ function querybody(b) {
 }
 
 async function home(req, res) {
-	res.render('home', { title: 'Tables', cols: blanks(3) });
+	res.render('home', { title: 'Explorer' });
+}
+
+async function newtable(req, res) {
+	res.render('new', { title: 'Create table', cols: blanks(1) });
 }
 
 async function create(req, res) {
@@ -168,23 +170,23 @@ async function create(req, res) {
 	try {
 		if (t === '')
 			throw bad('table name is required');
-		const r = await qt.insert(t, cols(req.body.cols));
+		const r = await req.qt.insert(t, cols(req.body.cols));
 		back(res, rowurl(t, r.rowKey), undefined, `Created table ${t} with row ${r.rowKey}`);
 	} catch (err) {
-		back(res, '/', err);
+		back(res, '/new', err);
 	}
 }
 
 async function table(req, res) {
 	const t = req.params.table;
 	const tab = req.query.tab ?? 'preview';
-	const v = { title: t, table: t, tab, mode: req.query.mode ?? 'builder', form: {}, where: blanks(2), cols: blanks(4) };
+	const v = { title: t, table: t, tab, mode: req.query.mode ?? 'builder', form: {}, where: blanks(2), cols: blanks(1) };
 
 	if (tab === 'preview') {
 		const page = int(req.query.page, 'page') ?? 0;
 		const [n, r] = await Promise.all([
-			qt.query(t, { countOnly: true }),
-			qt.query(t, { offset: page * pagesize, limit: pagesize }),
+			req.qt.query(t, { countOnly: true }),
+			req.qt.query(t, { offset: page * pagesize, limit: pagesize }),
 		]);
 		v.total = n.count;
 		v.grid = grid(t, r.rows ?? []);
@@ -195,7 +197,7 @@ async function table(req, res) {
 		v.next = v.to < n.count ? page + 1 : undefined;
 	}
 	if (tab === 'keys')
-		v.keys = (await qt.rows(t)).rows ?? [];
+		v.keys = (await req.qt.rows(t)).rows ?? [];
 	res.render('table', v);
 }
 
@@ -204,7 +206,7 @@ async function query(req, res) {
 	const b = req.body;
 	const mode = b.mode === 'json' ? 'json' : 'builder';
 	const where = (b.where ?? []).filter((w) => w.column !== undefined && w.column !== '');
-	const v = { title: t, table: t, tab: 'query', mode, form: b, where: where.concat(blanks(1)), cols: blanks(4) };
+	const v = { title: t, table: t, tab: 'query', mode, form: b, where: where.concat(blanks(1)), cols: blanks(1) };
 
 	try {
 		const q = querybody(b);
@@ -212,7 +214,7 @@ async function query(req, res) {
 		if (mode === 'json')
 			b.json = JSON.stringify(q, null, 2);
 		const start = performance.now();
-		v.result = await qt.query(t, q);
+		v.result = await req.qt.query(t, q);
 		v.elapsed = (performance.now() - start).toFixed(1);
 		if (v.result.rows !== undefined)
 			v.grid = grid(t, v.result.rows);
@@ -225,7 +227,7 @@ async function query(req, res) {
 async function insert(req, res) {
 	const t = req.params.table;
 	try {
-		const r = await qt.insert(t, cols(req.body.cols));
+		const r = await req.qt.insert(t, cols(req.body.cols));
 		back(res, rowurl(t, r.rowKey), undefined, `Inserted row ${r.rowKey}`);
 	} catch (err) {
 		back(res, tableurl(t, 'insert'), err);
@@ -235,7 +237,7 @@ async function insert(req, res) {
 async function batch(req, res) {
 	const t = req.params.table;
 	const b = req.body;
-	const v = { title: t, table: t, tab: 'batch', form: b, where: blanks(2), cols: blanks(4) };
+	const v = { title: t, table: t, tab: 'batch', form: b, where: blanks(2), cols: blanks(1) };
 
 	try {
 		const body = { action: b.action };
@@ -250,7 +252,7 @@ async function batch(req, res) {
 				throw bad('at least one row key is required');
 		}
 		v.reqbody = body;
-		v.result = await qt.batch(t, body);
+		v.result = await req.qt.batch(t, body);
 		if (b.action === 'get') {
 			const rows = Object.entries(v.result.rows ?? {}).map(([rowKey, columns]) => ({ rowKey, columns }));
 			v.grid = grid(t, rows);
@@ -268,7 +270,7 @@ async function drop(req, res) {
 	if (req.body.confirm !== t)
 		return back(res, tableurl(t, 'details'), bad('confirmation does not match the table name'));
 	try {
-		await qt.drop(t);
+		await req.qt.drop(t);
 		back(res, '/', undefined, `Dropped table ${t}`);
 	} catch (err) {
 		back(res, tableurl(t, 'details'), err);
@@ -277,17 +279,17 @@ async function drop(req, res) {
 
 async function row(req, res) {
 	const { table: t, row: k } = req.params;
-	const r = await qt.getrow(t, k);
+	const r = await req.qt.getrow(t, k);
 	const list = Object.entries(r.columns ?? {})
 		.sort(([a], [b]) => a.localeCompare(b))
 		.map(([name, v]) => ({ name, v: show(v), type: typeof_(v), href: rowurl(t, k) + '/columns/' + encodeURIComponent(name) }));
-	res.render('row', { title: `${t} / ${k}`, table: t, key: k, list, cols: blanks(3), setcols: blanks(3) });
+	res.render('row', { title: `${t} / ${k}`, table: t, key: k, list, cols: blanks(1), setcols: blanks(1) });
 }
 
 async function setrow(req, res) {
 	const { table: t, row: k } = req.params;
 	try {
-		await qt.setrow(t, k, cols(req.body.cols));
+		await req.qt.setrow(t, k, cols(req.body.cols));
 		back(res, rowurl(t, k), undefined, 'Row updated');
 	} catch (err) {
 		back(res, rowurl(t, k), err);
@@ -297,7 +299,7 @@ async function setrow(req, res) {
 async function delrow(req, res) {
 	const { table: t, row: k } = req.params;
 	try {
-		await qt.delrow(t, k);
+		await req.qt.delrow(t, k);
 		back(res, tableurl(t), undefined, `Deleted row ${k}`);
 	} catch (err) {
 		back(res, rowurl(t, k), err);
@@ -317,7 +319,7 @@ async function atomic(req, res) {
 			body.delta = parse(b.type === 'float' ? 'float' : 'int', b.value);
 		else
 			body.value = b.value ?? '';
-		const r = await qt.atomic(t, k, b.op, body);
+		const r = await req.qt.atomic(t, k, b.op, body);
 		back(res, rowurl(t, k), undefined, `${b.op} ${b.column} → ${show(r.value)}`);
 	} catch (err) {
 		back(res, rowurl(t, k), err);
@@ -334,7 +336,7 @@ async function cas(req, res) {
 			if (!nvalue.includes(b.op))
 				body.condition.value = parse(b.type, b.value);
 		}
-		await qt.cas(t, k, body);
+		await req.qt.cas(t, k, body);
 		back(res, rowurl(t, k), undefined, 'Check-and-set applied');
 	} catch (err) {
 		back(res, rowurl(t, k), err);
@@ -343,7 +345,7 @@ async function cas(req, res) {
 
 async function cell(req, res) {
 	const { table: t, row: k, column: c } = req.params;
-	const r = await qt.getcell(t, k, c);
+	const r = await req.qt.getcell(t, k, c);
 	res.render('cell', { title: `${t} / ${k} / ${c}`, table: t, key: k, column: c, v: show(r.value), type: typeof_(r.value), rowhref: rowurl(t, k) });
 }
 
@@ -354,7 +356,7 @@ async function setcell(req, res) {
 	try {
 		if (c === '')
 			throw bad('column is required');
-		await qt.setcell(t, k, c, parse(req.body.type, req.body.value));
+		await req.qt.setcell(t, k, c, parse(req.body.type, req.body.value));
 		back(res, url, undefined, `Set ${c}`);
 	} catch (err) {
 		back(res, url, err);
@@ -364,7 +366,7 @@ async function setcell(req, res) {
 async function delcell(req, res) {
 	const { table: t, row: k, column: c } = req.params;
 	try {
-		await qt.delcell(t, k, c);
+		await req.qt.delcell(t, k, c);
 		back(res, rowurl(t, k), undefined, `Deleted column ${c}`);
 	} catch (err) {
 		back(res, rowurl(t, k), err);
@@ -372,6 +374,6 @@ async function delcell(req, res) {
 }
 
 module.exports = {
-	fmterr, home, create, table, query, insert, batch, drop,
+	fmterr, home, newtable, create, table, query, insert, batch, drop,
 	row, setrow, delrow, atomic, cas, cell, setcell, delcell,
 };

@@ -31,7 +31,6 @@ for (let i = 0; i < argv.length; i++) {
 }
 if (!Number.isInteger(port) || port <= 0)
 	usage();
-qt.setbase(addr);
 
 const app = express();
 app.engine('handlebars', engine({
@@ -47,11 +46,46 @@ app.set('views', __dirname + '/views');
 app.use('/static', express.static(__dirname + '/views/static'));
 app.use(express.urlencoded({ extended: true }));
 
-// Every page shows the table explorer, so load it up front.
-app.use(async (req, res, next) => {
-	Object.assign(res.locals, { base: qt.getbase(), ops, types, msg: req.query.msg, err: req.query.err });
+function cookie(req, name) {
+	for (const kv of (req.headers.cookie ?? '').split(';')) {
+		const i = kv.indexOf('=');
+		if (i >= 0 && kv.slice(0, i).trim() === name)
+			return decodeURIComponent(kv.slice(i + 1).trim());
+	}
+	return undefined;
+}
+
+app.get('/connect', (req, res) => {
+	res.render('connect', { title: 'Connect', url: cookie(req, 'qt') ?? addr, err: req.query.err });
+});
+
+app.post('/connect', async (req, res) => {
+	const url = (req.body.url ?? '').trim();
 	try {
-		res.locals.tables = (await qt.tables()).tables ?? [];
+		if (!/^https?:\/\/[^\s]+$/.test(url))
+			throw new Error('address must start with http:// or https://');
+		await qt.client(url).tables();
+	} catch (err) {
+		return res.render('connect', { title: 'Connect', url, err: tc.fmterr(err) });
+	}
+	res.cookie('qt', url, { httpOnly: true, sameSite: 'lax' });
+	res.redirect('/');
+});
+
+app.post('/disconnect', (req, res) => {
+	res.clearCookie('qt');
+	res.redirect('/connect');
+});
+
+// Everything past here needs a server; every page shows the table explorer.
+app.use(async (req, res, next) => {
+	const base = cookie(req, 'qt');
+	if (base === undefined)
+		return res.redirect('/connect');
+	req.qt = qt.client(base);
+	Object.assign(res.locals, { base: req.qt.base, ops, types, msg: req.query.msg, err: req.query.err });
+	try {
+		res.locals.tables = (await req.qt.tables()).tables ?? [];
 	} catch (err) {
 		res.locals.tables = [];
 		res.locals.connerr = tc.fmterr(err);
@@ -60,6 +94,7 @@ app.use(async (req, res, next) => {
 });
 
 app.get('/', tc.home);
+app.get('/new', tc.newtable);
 app.post('/tables', tc.create);
 app.get('/tables/:table', tc.table);
 app.post('/tables/:table/query', tc.query);
