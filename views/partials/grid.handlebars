@@ -1,0 +1,20 @@
+<div class="table-scroll">
+<table>
+	<thead>
+		<tr><th class="idx">Row</th><th>rowKey</th>{{#each cols}}<th>{{this}}</th>{{/each}}</tr>
+	</thead>
+	<tbody>
+		{{#each rows}}
+		<tr>
+			<td class="idx">{{@index}}</td>
+			<td><a href="{{href}}"><code>{{key}}</code></a></td>
+			{{#each vals}}
+			{{#if missing}}<td class="missing">null</td>{{else}}<td{{#if num}} class="num"{{/if}}>{{v}}</td>{{/if}}
+			{{/each}}
+		</tr>
+		{{else}}
+		<tr><td colspan="2" class="missing">No rows</td></tr>
+		{{/each}}
+	</tbody>
+</table>
+</div>

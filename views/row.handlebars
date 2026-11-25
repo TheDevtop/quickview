@@ -1,0 +1,83 @@
+<nav aria-label="Breadcrumb"><ul><li><a href="/">Tables</a></li><li><a href="/tables/{{u table}}">{{table}}</a></li><li>{{key}}</li></ul></nav>
+<div class="toolbar">
+	<h1>Row <code>{{key}}</code></h1>
+	<form method="post" action="/tables/{{u table}}/rows/{{u key}}/delete">
+		<button type="submit" class="danger">Delete row</button>
+	</form>
+</div>
+
+<article>
+	<header><h3>Columns</h3><small>{{list.length}} columns</small></header>
+	<div class="table-scroll">
+	<table>
+		<thead><tr><th>Column</th><th>Value</th><th>Type</th><th></th></tr></thead>
+		<tbody>
+			{{#each list}}
+			<tr>
+				<td><a href="{{href}}">{{name}}</a></td>
+				<td class="value">{{v}}</td>
+				<td><span data-badge>{{type}}</span></td>
+				<td class="num">
+					<form method="post" action="{{href}}/delete"><button type="submit" class="ghost">Delete</button></form>
+				</td>
+			</tr>
+			{{/each}}
+		</tbody>
+	</table>
+	</div>
+</article>
+
+<div class="bq-grid">
+	<article>
+		<header><h3>Set cell</h3></header>
+		<form method="post" action="/tables/{{u table}}/rows/{{u key}}/columns">
+			<div class="cell-row">
+				<input name="column" placeholder="column" aria-label="Column" required>
+				<input name="value" placeholder="value" aria-label="Value">
+				{{> typesel n="type" t="string"}}
+			</div>
+			<footer><button type="submit">Set</button></footer>
+		</form>
+	</article>
+
+	<article>
+		<header><h3>Atomic operation</h3></header>
+		<form method="post" action="/tables/{{u table}}/rows/{{u key}}/atomic">
+			<div class="cell-row">
+				<select name="op" aria-label="Operation">
+					<option value="incr">increment</option>
+					<option value="append">append</option>
+					<option value="prepend">prepend</option>
+				</select>
+				<input name="column" placeholder="column" aria-label="Column" required>
+				<input name="value" placeholder="delta / text" aria-label="Value">
+			</div>
+			<label class="check"><input type="checkbox" name="type" value="float">Float delta (increment only)</label>
+			<footer><button type="submit">Apply</button></footer>
+		</form>
+	</article>
+</div>
+
+<article>
+	<header><h3>Set row</h3><small>Merges into the row; unmentioned columns are kept</small></header>
+	<form method="post" action="/tables/{{u table}}/rows/{{u key}}">
+		{{> cols list=cols n="cols"}}
+		<footer><button type="submit">Write columns</button></footer>
+	</form>
+</article>
+
+<article>
+	<header><h3>Check-and-set</h3><small>Leave the condition column empty to write unconditionally</small></header>
+	<form method="post" action="/tables/{{u table}}/rows/{{u key}}/cas">
+		<h5>If</h5>
+		<div class="pred-row">
+			<input name="column" placeholder="column" aria-label="Condition column">
+			{{> opsel n="op" o="="}}
+			<input name="value" placeholder="value" aria-label="Condition value">
+			{{> typesel n="type" t="string"}}
+		</div>
+		<h5 class="gap">Then set</h5>
+		{{> cols list=setcols n="cols"}}
+		<footer><button type="submit">Check and set</button></footer>
+	</form>
+</article>

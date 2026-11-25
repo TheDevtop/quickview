@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{title}} · Quickview</title>
+<link rel="stylesheet" href="/static/query-ui.css">
+<link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+<header class="bq-topbar">
+	<a class="brand" href="/">▦ Quickview</a>
+	<small class="addr" title="Quicktable server">{{base}}</small>
+</header>
+<div class="shell">
+	<aside>
+		<div class="explorer">
+			<h6>Explorer</h6>
+			<a href="/" role="button" class="ghost">+ Table</a>
+		</div>
+		<nav data-vertical aria-label="Tables">
+			<ul>
+				{{#each tables}}
+				<li><a href="/tables/{{u this}}"{{#if (eq this ../table)}} aria-current="page"{{/if}}>▦ {{this}}</a></li>
+				{{else}}
+				<li><small class="empty">No tables</small></li>
+				{{/each}}
+			</ul>
+		</nav>
+	</aside>
+	<main>
+		{{#if connerr}}<div role="alert" data-variant="danger">{{connerr}}</div>{{/if}}
+		{{#if err}}<div role="alert" data-variant="danger">{{err}}</div>{{/if}}
+		{{#if msg}}<div role="alert" data-variant="success">{{msg}}</div>{{/if}}
+		{{{body}}}
+	</main>
+</div>
+</body>
+</html>

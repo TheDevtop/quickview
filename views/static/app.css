@@ -1,0 +1,48 @@
+/* Page layout for Quickview; components come from query-ui.css. */
+
+header.bq-topbar a.brand { color: #ffffff; font-size: 16px; font-weight: 500; }
+header.bq-topbar .addr { color: rgba(255, 255, 255, 0.85); font-family: var(--bq-font-mono); }
+
+.shell { display: grid; grid-template-columns: 240px 1fr; min-height: calc(100vh - 48px); }
+.shell > aside { border-right: 1px solid var(--bq-border); background-color: var(--bq-bg); padding: 12px 0; }
+.shell > main { padding: 16px 24px; background-color: var(--bq-bg-subtle); min-width: 0; }
+
+.explorer { display: flex; align-items: center; justify-content: space-between; padding: 0 10px 8px 18px; }
+.explorer h6 { margin: 0; }
+.empty { display: block; padding: 0 18px; }
+
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.toolbar h1 { margin: 0; }
+.pager { margin-top: 12px; }
+.gap { margin-top: 12px; }
+.big { font-size: 32px; margin: 0; }
+
+article > form > footer,
+article form footer { display: flex; justify-content: flex-end; margin-top: 12px; }
+td form { display: inline; }
+
+.fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+.cell-row,
+.pred-row { display: grid; gap: 8px; margin-bottom: 8px; align-items: start; }
+.cell-row { grid-template-columns: 1fr 2fr 100px; }
+.pred-row { grid-template-columns: 1fr 120px 2fr 100px; }
+label.check { display: inline-flex; align-items: center; margin: 0 16px 0 0; }
+
+.table-scroll { max-height: 65vh; overflow: auto; background-color: var(--bq-bg); }
+td.missing { color: var(--bq-text-muted); font-style: italic; }
+th.idx, td.idx { color: var(--bq-text-muted); width: 1%; }
+td.value { font-family: var(--bq-font-mono); white-space: pre-wrap; word-break: break-all; }
+
+ul.keys { list-style: none; margin: 0; padding: 0; columns: 4 140px; }
+ul.keys li { padding: 2px 0; }
+
+[role="tablist"] a[role="tab"] { display: inline-flex; align-items: center; text-decoration: none; }
+article header a[aria-current="page"] { font-weight: 500; text-decoration: underline; }
+
+@media (max-width: 720px) {
+	.shell { grid-template-columns: 1fr; }
+	.shell > aside { border-right: none; border-bottom: 1px solid var(--bq-border); }
+	.shell > main { padding: 16px; }
+	.pred-row { grid-template-columns: 1fr 1fr; }
+	[role="tablist"] { overflow-x: auto; }
+}

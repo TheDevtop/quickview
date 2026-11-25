@@ -1,0 +1,29 @@
+<h1>Tables</h1>
+<p><small>A table exists while it holds at least one cell. Create one by inserting its first row.</small></p>
+
+<article>
+	<header><h3>Tables on this server</h3><small>{{tables.length}} total</small></header>
+	<div class="table-scroll">
+	<table>
+		<thead><tr><th>Table</th></tr></thead>
+		<tbody>
+			{{#each tables}}
+			<tr><td><a href="/tables/{{u this}}">▦ {{this}}</a></td></tr>
+			{{else}}
+			<tr><td class="missing">No tables yet</td></tr>
+			{{/each}}
+		</tbody>
+	</table>
+	</div>
+</article>
+
+<article>
+	<header><h3>Create table</h3></header>
+	<form method="post" action="/tables">
+		<label for="table">Table name</label>
+		<input id="table" name="table" required placeholder="users">
+		<h5 class="gap">First row</h5>
+		{{> cols list=cols n="cols"}}
+		<footer><button type="submit">Create table</button></footer>
+	</form>
+</article>
