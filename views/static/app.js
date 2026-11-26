@@ -17,3 +17,8 @@ document.addEventListener('click', (ev) => {
 	list.appendChild(row);
 	row.querySelector('input').focus();
 });
+
+// On narrow screens the sidebar stacks above the page, so start it collapsed.
+if (matchMedia('(max-width: 900px)').matches)
+	for (const d of document.querySelectorAll('aside[data-sidebar] details'))
+		d.open = false;

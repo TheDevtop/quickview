@@ -1,0 +1,1426 @@
+/*!
+ * Cloud Console UI v2.0.0 (cloud-console.css)
+ * Semantic HTML5 & ARIA Component Library inspired by Google Cloud BigQuery & Bigtable
+ * Zero framework dependencies. Designed for standalone static deployment.
+ */
+
+/* --------------------------------------------------------------------------
+   1. DESIGN TOKENS & COLOR PALETTE (Light & Dark Modes)
+   -------------------------------------------------------------------------- */
+:root,
+[data-theme="light"] {
+  /* Brand & GCP Console Accents */
+  --cc-topbar-bg: #1a73e8;
+  --cc-topbar-input-bg: rgba(255, 255, 255, 0.16);
+  --cc-topbar-input-focus: #ffffff;
+  --cc-primary: #3367d6;
+  --cc-primary-hover: #2855b8;
+  --cc-primary-active: #1c3aa9;
+  --cc-primary-tint: #e8f0fe;
+  --cc-primary-focus: rgba(26, 115, 232, 0.24);
+  --cc-link: #1a73e8;
+
+  /* Surfaces */
+  --cc-bg: #ffffff;
+  --cc-bg-subtle: #f8f9fa;
+  --cc-bg-muted: #f1f3f4;
+  --cc-bg-tabstrip: #ebebeb;
+  --cc-bg-thead: #f5f5f5;
+  --cc-bg-hover: #f5f7fa;
+
+  /* Borders & Dividers */
+  --cc-border: #e0e0e0;
+  --cc-border-strong: #dadce0;
+  --cc-border-grid: #ebebeb;
+
+  /* Text Hierarchy */
+  --cc-text: #202124;
+  --cc-text-secondary: #5f6368;
+  --cc-text-muted: #757575;
+  --cc-text-inverse: #ffffff;
+
+  /* Semantic Status (BigQuery / Bigtable) */
+  --cc-success: #1e8e3e;
+  --cc-success-bg: #e6f4ea;
+  --cc-warning: #e37400;
+  --cc-warning-bg: #fef7e0;
+  --cc-danger: #d93025;
+  --cc-danger-bg: #fce8e6;
+  --cc-info: #1a73e8;
+  --cc-info-bg: #e8f0fe;
+
+  /* SQL & Code Syntax */
+  --cc-syntax-kw: #7b1fa2;
+  --cc-syntax-id: #0277bd;
+  --cc-syntax-str: #188038;
+  --cc-syntax-num: #c5221f;
+
+  /* Geometry, Shadows & Motion */
+  --cc-radius: 3px;
+  --cc-radius-md: 4px;
+  --cc-shadow-xs: 0 1px 2px rgba(60, 64, 67, 0.12);
+  --cc-shadow-sm: 0 1px 3px rgba(60, 64, 67, 0.18);
+  --cc-shadow-md: 0 3px 8px rgba(60, 64, 67, 0.22);
+  --cc-shadow-lg: 0 8px 24px rgba(32, 33, 36, 0.28);
+  --cc-transition: 140ms cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Typography */
+  --cc-font-sans: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --cc-font-mono: 'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+[data-theme="dark"] {
+  --cc-topbar-bg: #202124;
+  --cc-topbar-input-bg: rgba(255, 255, 255, 0.09);
+  --cc-topbar-input-focus: #303134;
+  --cc-primary: #8ab4f8;
+  --cc-primary-hover: #aecbfa;
+  --cc-primary-active: #669df6;
+  --cc-primary-tint: rgba(138, 180, 248, 0.16);
+  --cc-primary-focus: rgba(138, 180, 248, 0.28);
+  --cc-link: #8ab4f8;
+
+  --cc-bg: #202124;
+  --cc-bg-subtle: #28292c;
+  --cc-bg-muted: #303134;
+  --cc-bg-tabstrip: #17181b;
+  --cc-bg-thead: #292a2d;
+  --cc-bg-hover: #2c2e33;
+
+  --cc-border: #3c4043;
+  --cc-border-strong: #5f6368;
+  --cc-border-grid: #323639;
+
+  --cc-text: #e8eaed;
+  --cc-text-secondary: #9aa0a6;
+  --cc-text-muted: #80868b;
+  --cc-text-inverse: #202124;
+
+  --cc-success: #81c995;
+  --cc-success-bg: rgba(129, 201, 149, 0.16);
+  --cc-warning: #fdd663;
+  --cc-warning-bg: rgba(253, 214, 99, 0.16);
+  --cc-danger: #f28b82;
+  --cc-danger-bg: rgba(242, 139, 130, 0.16);
+  --cc-info: #8ab4f8;
+  --cc-info-bg: rgba(138, 180, 248, 0.16);
+
+  --cc-syntax-kw: #d7aefb;
+  --cc-syntax-id: #8ab4f8;
+  --cc-syntax-str: #81c995;
+  --cc-syntax-num: #f28b82;
+}
+
+/* --------------------------------------------------------------------------
+   2. BASE & SEMANTIC TYPOGRAPHY (PicoCSS Classless Philosophy)
+   -------------------------------------------------------------------------- */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  font-family: var(--cc-font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--cc-text);
+  background-color: var(--cc-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--cc-bg);
+  color: var(--cc-text);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  margin: 0 0 0.5rem 0;
+  font-weight: 400;
+  color: var(--cc-text);
+  line-height: 1.3;
+}
+h1 { font-size: 20px; font-weight: 500; }
+h2 { font-size: 18px; font-weight: 400; }
+h3 { font-size: 15px; font-weight: 500; }
+h4 { font-size: 13px; font-weight: 500; }
+h5 { font-size: 12px; font-weight: 500; color: var(--cc-text-secondary); }
+h6 { font-size: 11px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; color: var(--cc-text-muted); }
+
+p {
+  margin: 0 0 0.75rem 0;
+  max-width: 78ch;
+}
+
+small {
+  font-size: 12px;
+  color: var(--cc-text-secondary);
+}
+
+a {
+  color: var(--cc-link);
+  text-decoration: none;
+  cursor: pointer;
+}
+a:hover {
+  text-decoration: underline;
+}
+
+hr {
+  border: 0;
+  border-top: 1px solid var(--cc-border);
+  margin: 1rem 0;
+}
+
+blockquote {
+  margin: 0 0 1rem 0;
+  padding: 8px 14px;
+  border-left: 3px solid var(--cc-link);
+  background: var(--cc-bg-subtle);
+  color: var(--cc-text-secondary);
+}
+
+/* Description Lists (Used for Table Details & Instance Metadata) */
+dl {
+  display: grid;
+  grid-template-columns: minmax(160px, 220px) 1fr;
+  margin: 0 0 1rem 0;
+  border-top: 1px solid var(--cc-border);
+}
+dt, dd {
+  margin: 0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--cc-border-grid);
+  font-size: 12.5px;
+}
+dt {
+  font-weight: 500;
+  color: var(--cc-text-secondary);
+  background: var(--cc-bg-subtle);
+}
+
+/* Code, Pre & Kbd */
+code, kbd, pre, samp {
+  font-family: var(--cc-font-mono);
+  font-size: 12px;
+}
+code {
+  padding: 1px 5px;
+  background: var(--cc-bg-muted);
+  border-radius: var(--cc-radius);
+}
+kbd {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 5px;
+  font-size: 11px;
+  color: var(--cc-text-secondary);
+  background: var(--cc-bg-subtle);
+  border: 1px solid var(--cc-border-strong);
+  border-bottom-width: 2px;
+  border-radius: var(--cc-radius);
+}
+pre {
+  margin: 0 0 1rem 0;
+  padding: 12px 14px;
+  background: var(--cc-bg-subtle);
+  border: 1px solid var(--cc-border);
+  border-radius: var(--cc-radius-md);
+  overflow-x: auto;
+}
+pre code {
+  padding: 0;
+  background: transparent;
+}
+
+/* Material Icons alignment helper */
+.material-icons,
+.material-icons-outlined {
+  font-size: 18px;
+  line-height: 1;
+  vertical-align: middle;
+  user-select: none;
+}
+
+/* --------------------------------------------------------------------------
+   3. BUTTONS, ACTION LINKS & SPLIT BUTTONS
+   -------------------------------------------------------------------------- */
+button,
+[type="button"],
+[type="submit"],
+[type="reset"],
+[role="button"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1;
+  border-radius: var(--cc-radius);
+  border: 1px solid transparent;
+  background-color: var(--cc-primary);
+  color: var(--cc-text-inverse);
+  box-shadow: var(--cc-shadow-xs);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: background-color var(--cc-transition), border-color var(--cc-transition), box-shadow var(--cc-transition);
+}
+
+button:hover:not(:disabled),
+[type="button"]:hover:not(:disabled),
+[type="submit"]:hover:not(:disabled),
+[role="button"]:hover:not([aria-disabled="true"]) {
+  background-color: var(--cc-primary-hover);
+  text-decoration: none;
+}
+
+button:focus-visible,
+[role="button"]:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--cc-primary-focus);
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Outlined Secondary Button ("Save query", "Save view", Pagination buttons) */
+button.secondary,
+[type="reset"],
+[role="button"].secondary {
+  background-color: var(--cc-bg);
+  color: var(--cc-text);
+  border-color: var(--cc-border-strong);
+  font-weight: 400;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+button.secondary:hover:not(:disabled),
+[type="reset"]:hover:not(:disabled) {
+  background-color: var(--cc-bg-subtle);
+}
+
+/* Console Action Button (Uppercase Flat Blue: "+ CREATE TABLE", "SHARE TABLE", "REFRESH") */
+button.ghost,
+button.action,
+[role="button"].ghost {
+  background-color: transparent;
+  color: var(--cc-link);
+  border-color: transparent;
+  box-shadow: none;
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.35px;
+  padding: 0 8px;
+}
+button.ghost:hover:not(:disabled),
+button.action:hover:not(:disabled),
+[role="button"].ghost:hover:not([aria-disabled="true"]) {
+  background-color: var(--cc-primary-tint);
+}
+
+/* Destructive Button */
+button.danger {
+  background-color: var(--cc-danger);
+  color: #ffffff;
+}
+button.danger:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+/* Circular Icon Button */
+button.icon,
+[role="button"].icon {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--cc-text-secondary);
+  box-shadow: none;
+}
+button.icon:hover:not(:disabled) {
+  background-color: var(--cc-bg-muted);
+  color: var(--cc-text);
+}
+
+/* Split Button ("Run | v") */
+[role="group"][data-split] {
+  display: inline-flex;
+  align-items: stretch;
+  border-radius: var(--cc-radius);
+  box-shadow: var(--cc-shadow-xs);
+  overflow: hidden;
+}
+[role="group"][data-split] > button {
+  border-radius: 0;
+  box-shadow: none;
+}
+[role="group"][data-split] > button + button {
+  padding: 0 5px;
+  border-left: 1px solid rgba(255, 255, 255, 0.28);
+}
+
+/*Pico-style Loading State [aria-busy="true"] */
+[aria-busy="true"] {
+  position: relative;
+  pointer-events: none;
+}
+[aria-busy="true"]::before {
+  content: "";
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  margin-right: 6px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: cc-spin 0.65s linear infinite;
+}
+@keyframes cc-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* --------------------------------------------------------------------------
+   4. FORMS, SEARCH BARS & FILTER BARS
+   -------------------------------------------------------------------------- */
+label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cc-text-secondary);
+}
+
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="submit"]):not([type="button"]):not([type="reset"]),
+select,
+textarea {
+  display: block;
+  width: 100%;
+  height: 30px;
+  padding: 4px 10px;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--cc-text);
+  background-color: var(--cc-bg);
+  border: 1px solid var(--cc-border-strong);
+  border-radius: var(--cc-radius);
+  transition: border-color var(--cc-transition), box-shadow var(--cc-transition);
+}
+
+textarea {
+  height: auto;
+  min-height: 74px;
+  padding: 8px 10px;
+  resize: vertical;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--cc-link);
+  box-shadow: 0 0 0 2px var(--cc-primary-focus);
+}
+
+input[aria-invalid="true"],
+select[aria-invalid="true"],
+textarea[aria-invalid="true"] {
+  border-color: var(--cc-danger);
+}
+input[aria-invalid="false"] {
+  border-color: var(--cc-success);
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background-color: var(--cc-bg-muted);
+  color: var(--cc-text-muted);
+  cursor: not-allowed;
+}
+
+fieldset {
+  margin: 0 0 1rem 0;
+  padding: 12px 14px;
+  border: 1px solid var(--cc-border);
+  border-radius: var(--cc-radius-md);
+}
+legend {
+  padding: 0 6px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--cc-text-secondary);
+}
+
+/* Checkboxes, Radios & Switches (Matches Bigtable square checkboxes) */
+input[type="checkbox"],
+input[type="radio"] {
+  width: 15px;
+  height: 15px;
+  margin: 0 6px 0 0;
+  accent-color: var(--cc-primary);
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+input[type="checkbox"][role="switch"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 32px;
+  height: 18px;
+  background: var(--cc-border-strong);
+  border-radius: 999px;
+  position: relative;
+  transition: background-color var(--cc-transition);
+}
+input[type="checkbox"][role="switch"]::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  transition: transform var(--cc-transition);
+}
+input[type="checkbox"][role="switch"]:checked {
+  background: var(--cc-primary);
+}
+input[type="checkbox"][role="switch"]:checked::after {
+  transform: translateX(14px);
+}
+
+/* Sidebar Explorer Search ("Type to search ?") */
+[role="search"] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 8px;
+  background: var(--cc-bg);
+  border: 1px solid var(--cc-border-strong);
+  border-radius: var(--cc-radius-md);
+}
+[role="search"]:focus-within {
+  border-color: var(--cc-link);
+  box-shadow: 0 0 0 2px var(--cc-primary-focus);
+}
+[role="search"] input {
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  padding: 0 2px;
+  height: 100%;
+}
+
+/* Bigtable Table Filter Bar ("=== Filter | Filter tables ... ? |||") */
+[role="search"][data-filter-bar] {
+  height: 40px;
+  border: none;
+  border-top: 1px solid var(--cc-border);
+  border-bottom: 1px solid var(--cc-border);
+  border-radius: 0;
+  padding: 0 14px;
+  box-shadow: none !important;
+  gap: 10px;
+}
+[role="search"][data-filter-bar] .filter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  color: var(--cc-text);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------------
+   5. GOOGLE CLOUD GLOBAL TOPBAR & PRODUCT SUBHEADER
+   -------------------------------------------------------------------------- */
+header[data-topbar] {
+  height: 48px;
+  background-color: var(--cc-topbar-bg);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  position: sticky;
+  top: 0;
+  z-index: 60;
+}
+
+header[data-topbar] .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.2px;
+  white-space: nowrap;
+}
+
+header[data-topbar] button.icon,
+header[data-topbar] button.ghost {
+  color: #ffffff;
+}
+header[data-topbar] button.icon:hover,
+header[data-topbar] button.ghost:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+/* Global Search Bar inside GCP Topbar */
+header[data-topbar] [role="search"] {
+  flex: 0 1 540px;
+  height: 34px;
+  background: var(--cc-topbar-input-bg);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--cc-radius-md);
+  color: #ffffff;
+  padding: 0 10px;
+  transition: background-color var(--cc-transition), color var(--cc-transition);
+}
+header[data-topbar] [role="search"] input {
+  color: inherit;
+}
+header[data-topbar] [role="search"] input::placeholder {
+  color: rgba(255, 255, 255, 0.82);
+}
+header[data-topbar] [role="search"]:focus-within {
+  background: var(--cc-topbar-input-focus);
+  color: var(--cc-text);
+  border-color: transparent;
+  box-shadow: var(--cc-shadow-sm);
+}
+header[data-topbar] [role="search"]:focus-within input::placeholder {
+  color: var(--cc-text-muted);
+}
+
+/* Topbar Notification Badge & Avatar */
+[data-notification-badge] {
+  position: relative;
+}
+[data-notification-badge]::after {
+  content: attr(data-notification-badge);
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #00bfa5;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+[data-avatar] {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 500;
+  background: #fbbc04;
+  color: #202124;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  flex-shrink: 0;
+}
+
+/* Product Subheader Bar (BigQuery / Bigtable Title + Breadcrumb + Global Actions) */
+header[data-subheader] {
+  min-height: 48px;
+  background: var(--cc-bg);
+  border-bottom: 1px solid var(--cc-border);
+  display: flex;
+  align-items: stretch;
+}
+header[data-subheader] .product-title {
+  width: 256px;
+  min-width: 256px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 18px;
+  color: var(--cc-text);
+  border-right: 1px solid var(--cc-border);
+}
+header[data-subheader] .subheader-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Bigtable Two-line Breadcrumb ("All instances > INSTANCE / prod-hbase-database") */
+nav[aria-label="Breadcrumb"] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+nav[aria-label="Breadcrumb"] li + li::before {
+  content: "›";
+  margin-right: 8px;
+  font-size: 16px;
+  color: var(--cc-text-secondary);
+}
+.breadcrumb-stack {
+  display: inline-flex;
+  flex-direction: column;
+  line-height: 1.18;
+  vertical-align: middle;
+}
+.breadcrumb-stack small {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--cc-text-secondary);
+}
+
+/* --------------------------------------------------------------------------
+   6. CONSOLE SHELL: ACTIVITY RAIL, SIDEBAR, MAIN & RIGHT INFO PANEL
+   -------------------------------------------------------------------------- */
+.cc-shell {
+  display: flex;
+  min-height: calc(100vh - 96px);
+  position: relative;
+}
+
+/* Narrow Far-Left Activity Icon Rail (BigQuery image 1) */
+nav[data-rail] {
+  width: 48px;
+  min-width: 48px;
+  background: var(--cc-bg);
+  border-right: 1px solid var(--cc-border);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 0;
+}
+nav[data-rail] ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+nav[data-rail] button,
+nav[data-rail] a {
+  width: 48px;
+  height: 40px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--cc-text-secondary);
+  box-shadow: none;
+  border: none;
+}
+nav[data-rail] button:hover,
+nav[data-rail] a:hover {
+  background: var(--cc-bg-subtle);
+  color: var(--cc-text);
+  text-decoration: none;
+}
+nav[data-rail] [aria-current="true"],
+nav[data-rail] [aria-current="page"] {
+  background: var(--cc-primary-tint);
+  color: var(--cc-link);
+}
+
+/* Left Navigation / Resource Explorer Sidebar */
+aside[data-sidebar] {
+  width: 256px;
+  min-width: 256px;
+  background: var(--cc-bg);
+  border-right: 1px solid var(--cc-border);
+  display: flex;
+  flex-direction: column;
+  user-select: none;
+}
+
+/* Collapsible Sidebar Sections (Bigtable "Instance ^", "Insights ^") */
+details[data-nav-group] {
+  border: none;
+  border-bottom: 1px solid var(--cc-border-grid);
+  border-radius: 0;
+  margin: 0;
+  background: transparent;
+}
+details[data-nav-group] > summary {
+  padding: 12px 16px 8px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--cc-text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  list-style: none;
+}
+details[data-nav-group] > summary::-webkit-details-marker { display: none; }
+details[data-nav-group] > summary::before { display: none !important; }
+details[data-nav-group] > summary::after {
+  content: "expand_less";
+  font-family: 'Material Icons';
+  font-size: 18px;
+  color: var(--cc-text-secondary);
+  transition: transform var(--cc-transition);
+}
+details[data-nav-group]:not([open]) > summary::after {
+  transform: rotate(180deg);
+}
+details[data-nav-group] > ul {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 8px 0;
+}
+details[data-nav-group] a,
+details[data-nav-group] button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 14px;
+  width: 100%;
+  height: 38px;
+  padding: 0 16px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--cc-text);
+  font-weight: 400;
+  font-size: 13px;
+  box-shadow: none;
+}
+details[data-nav-group] a:hover,
+details[data-nav-group] button:hover {
+  background: var(--cc-bg-subtle);
+  text-decoration: none;
+}
+details[data-nav-group] [aria-current="page"],
+details[data-nav-group] [aria-current="true"] {
+  background: var(--cc-primary-tint);
+  color: var(--cc-link);
+  font-weight: 500;
+}
+
+/* Explorer Resource Tree (Projects > Datasets > Tables + Pin Icons) */
+details[data-tree] {
+  border: none;
+  margin: 0;
+  background: transparent;
+}
+details[data-tree] > summary {
+  padding: 5px 10px;
+  font-weight: 400;
+  font-size: 12.5px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  list-style: none;
+}
+details[data-tree] > summary::-webkit-details-marker { display: none; }
+details[data-tree] > summary::before {
+  content: "arrow_right";
+  font-family: 'Material Icons';
+  font-size: 18px;
+  color: var(--cc-text-secondary);
+  transition: transform var(--cc-transition);
+}
+details[data-tree][open] > summary::before {
+  transform: rotate(90deg);
+}
+details[data-tree] > summary:hover,
+.tree-leaf:hover {
+  background: var(--cc-bg-subtle);
+}
+.tree-leaf {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 5px 12px 5px 38px;
+  font-size: 12.5px;
+  cursor: pointer;
+  color: var(--cc-text);
+}
+.tree-leaf[aria-selected="true"] {
+  background: var(--cc-primary-tint);
+  color: var(--cc-link);
+  font-weight: 500;
+}
+.pin-btn {
+  margin-left: auto;
+  color: var(--cc-link);
+  opacity: 0.85;
+  font-size: 15px !important;
+}
+
+/* Main Workspace Content Area */
+main[data-workspace] {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--cc-bg);
+}
+
+/* Toggleable Right Info Panel ("SHOW INFO PANEL" in Bigtable) */
+aside[data-info-panel] {
+  width: 310px;
+  min-width: 310px;
+  border-left: 1px solid var(--cc-border);
+  background: var(--cc-bg);
+  display: flex;
+  flex-direction: column;
+  transition: margin-right var(--cc-transition);
+}
+aside[data-info-panel][hidden] {
+  display: none;
+}
+
+/* --------------------------------------------------------------------------
+   7. WORKSPACE CLOSABLE TABS & UNDERLINE TABS
+   -------------------------------------------------------------------------- */
+/* Closable Document Tab Strip (BigQuery image 1: "< | PROJECT... x | APPLICA... x | > | + COMPOSE NEW QUERY") */
+[data-workspace-tabbar] {
+  display: flex;
+  align-items: stretch;
+  height: 38px;
+  background: var(--cc-bg-tabstrip);
+  border-bottom: 1px solid var(--cc-border);
+  user-select: none;
+}
+[data-workspace-tabbar] .tab-scroll-list {
+  display: flex;
+  align-items: stretch;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+[data-workspace-tabbar] .ws-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  min-width: 145px;
+  max-width: 210px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  color: var(--cc-text-secondary);
+  background: transparent;
+  border-right: 1px solid var(--cc-border);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+}
+[data-workspace-tabbar] .ws-tab:hover {
+  background: rgba(0, 0, 0, 0.03);
+}
+[data-workspace-tabbar] .ws-tab[aria-selected="true"] {
+  background: var(--cc-bg);
+  color: var(--cc-link);
+  border-bottom-color: var(--cc-link);
+}
+[data-workspace-tabbar] .ws-tab .close-tab {
+  margin-left: auto;
+  font-size: 15px;
+  color: var(--cc-text-secondary);
+  border-radius: 50%;
+  padding: 2px;
+}
+[data-workspace-tabbar] .ws-tab .close-tab:hover {
+  background: var(--cc-bg-muted);
+  color: var(--cc-text);
+}
+
+/* Underline Section Tabs ("Schema | Details | Preview" & "Job information | Results | JSON") */
+[role="tablist"] {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--cc-border);
+  background: var(--cc-bg);
+}
+[role="tab"] {
+  height: 36px;
+  padding: 0 2px;
+  background: transparent;
+  color: var(--cc-text-secondary);
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  box-shadow: none;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+[role="tab"]:hover:not(:disabled) {
+  background: transparent;
+  color: var(--cc-text);
+}
+[role="tab"][aria-selected="true"] {
+  color: var(--cc-link);
+  border-bottom-color: var(--cc-link);
+}
+
+/* --------------------------------------------------------------------------
+   8. DATA TABLES, SORTABLE COLUMNS & PAGINATION FOOTER
+   -------------------------------------------------------------------------- */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+  background: var(--cc-bg);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12.5px;
+  text-align: left;
+  background: var(--cc-bg);
+}
+
+thead th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--cc-bg-thead);
+  color: var(--cc-text);
+  font-weight: 500;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--cc-border);
+  border-right: 1px solid var(--cc-border-grid);
+  white-space: nowrap;
+}
+thead th:last-child,
+tbody td:last-child {
+  border-right: none;
+}
+
+/* Bigtable Clean Grid Modifier (No vertical gridlines) */
+table[data-grid="clean"] thead th,
+table[data-grid="clean"] tbody td {
+  border-right: none;
+  padding: 9px 14px;
+}
+
+tbody td {
+  padding: 6px 12px;
+  border-bottom: 1px solid var(--cc-border-grid);
+  border-right: 1px solid var(--cc-border-grid);
+  color: var(--cc-text);
+  white-space: nowrap;
+}
+
+tbody tr:hover {
+  background: var(--cc-bg-hover);
+}
+tbody tr[aria-selected="true"] {
+  background: var(--cc-primary-tint);
+}
+
+th.num, td.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Sortable Column Header */
+th[data-sort] {
+  cursor: pointer;
+  user-select: none;
+}
+th[data-sort]:hover {
+  background: var(--cc-bg-muted);
+}
+th[aria-sort="ascending"]::after {
+  content: " ↑";
+  font-weight: 700;
+  color: var(--cc-text);
+}
+th[aria-sort="descending"]::after {
+  content: " ↓";
+  font-weight: 700;
+  color: var(--cc-text);
+}
+
+/* Pagination Footer ("Rows per page: 100 v | 1 - 100 of 1000 | First page | < | > | Last page") */
+.cc-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 6px 16px;
+  border-top: 1px solid var(--cc-border);
+  background: var(--cc-bg);
+  font-size: 12px;
+  color: var(--cc-text-secondary);
+  flex-wrap: wrap;
+}
+.cc-pagination select {
+  width: auto;
+  height: 26px;
+  padding: 0 22px 0 8px;
+  font-size: 12px;
+}
+.cc-pagination button.secondary {
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+}
+
+/* --------------------------------------------------------------------------
+   9. SQL EDITOR, SPLIT RESIZER & DOCKED BOTTOM DRAWER
+   -------------------------------------------------------------------------- */
+.cc-sql-editor {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  border-top: 1px solid var(--cc-border);
+  border-bottom: 1px solid var(--cc-border);
+  background: var(--cc-bg);
+  min-height: 128px;
+  font-family: var(--cc-font-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+.cc-sql-gutter {
+  background: var(--cc-bg-subtle);
+  border-right: 1px solid var(--cc-border);
+  color: var(--cc-text-muted);
+  padding: 10px 6px;
+  text-align: right;
+  user-select: none;
+}
+.cc-sql-input {
+  border: none !important;
+  box-shadow: none !important;
+  border-radius: 0 !important;
+  padding: 10px 12px !important;
+  font-family: var(--cc-font-mono) !important;
+  font-size: 12.5px !important;
+  line-height: 1.55 !important;
+  resize: none !important;
+  min-height: 128px !important;
+}
+
+/* Split Pane Divider Handle (BigQuery image 2) */
+.cc-split-divider {
+  height: 8px;
+  background: var(--cc-bg-subtle);
+  border-top: 1px solid var(--cc-border);
+  border-bottom: 1px solid var(--cc-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: row-resize;
+}
+.cc-split-divider::after {
+  content: "";
+  width: 28px;
+  height: 3px;
+  border-top: 1px solid var(--cc-border-strong);
+  border-bottom: 1px solid var(--cc-border-strong);
+}
+
+/* Bottom Docked Drawer ("JOB HISTORY | QUERY HISTORY | SAVED QUERIES ^") */
+.cc-bottom-drawer {
+  margin-top: auto;
+  border-top: 1px solid var(--cc-border);
+  background: var(--cc-bg-tabstrip);
+}
+.cc-bottom-drawer-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 34px;
+  padding: 0 12px 0 0;
+}
+
+/* --------------------------------------------------------------------------
+   10. DROPDOWN MENUS, CHIPS, BADGES, ALERTS, MODALS & TOOLTIPS
+   -------------------------------------------------------------------------- */
+/* Dropdown Menu (<details role="list">) */
+details[role="list"] {
+  position: relative;
+  display: inline-block;
+  border: none;
+  margin: 0;
+  background: transparent;
+}
+details[role="list"] > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  font-size: 12.5px;
+  font-weight: 400;
+  background: var(--cc-bg);
+  color: var(--cc-text);
+  border: 1px solid var(--cc-border-strong);
+  border-radius: var(--cc-radius);
+  cursor: pointer;
+  list-style: none;
+}
+details[role="list"] > summary::-webkit-details-marker { display: none; }
+details[role="list"] > summary::after {
+  content: "▾";
+  font-size: 11px;
+  opacity: 0.75;
+}
+details[role="list"][data-ghost] > summary {
+  background: transparent;
+  border-color: transparent;
+  color: var(--cc-link);
+  font-weight: 500;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+details[role="list"][data-ghost] > summary:hover {
+  background: var(--cc-primary-tint);
+}
+header[data-topbar] details[role="list"] > summary {
+  background: transparent;
+  border-color: transparent;
+  color: #ffffff;
+  font-weight: 500;
+}
+header[data-topbar] details[role="list"] > summary:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+details[role="list"] > ul {
+  position: absolute;
+  top: calc(100% + 3px);
+  left: 0;
+  z-index: 80;
+  min-width: 190px;
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  background: var(--cc-bg);
+  border: 1px solid var(--cc-border-strong);
+  border-radius: var(--cc-radius-md);
+  box-shadow: var(--cc-shadow-md);
+}
+details[role="list"][data-align="right"] > ul {
+  left: auto;
+  right: 0;
+}
+details[role="list"] > ul li[role="separator"] {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--cc-border);
+}
+details[role="list"] > ul button,
+details[role="list"] > ul a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 30px;
+  padding: 0 14px;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: var(--cc-text);
+  font-weight: 400;
+  font-size: 12.5px;
+  box-shadow: none;
+}
+details[role="list"] > ul button:hover,
+details[role="list"] > ul a:hover {
+  background: var(--cc-bg-muted);
+  text-decoration: none;
+}
+
+/* Pills, Filter Chips & Status Indicators ("Processing location: US", "✓ Ready") */
+[data-pill],
+.cc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--cc-bg-muted);
+  color: var(--cc-text-secondary);
+  font-size: 11.5px;
+  font-weight: 500;
+}
+[data-badge="success"] { background: var(--cc-success-bg); color: var(--cc-success); }
+[data-badge="warning"] { background: var(--cc-warning-bg); color: var(--cc-warning); }
+[data-badge="danger"]  { background: var(--cc-danger-bg); color: var(--cc-danger); }
+[data-badge="info"]    { background: var(--cc-info-bg); color: var(--cc-info); }
+
+.cc-status-ready {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--cc-text);
+}
+.cc-status-ready::before {
+  content: "check_circle";
+  font-family: 'Material Icons';
+  font-size: 16px;
+  color: var(--cc-success);
+}
+
+/* Semantic Cards (<article>), Alerts ([role="alert"]), Progress & Modals (<dialog>) */
+article {
+  background: var(--cc-bg);
+  border: 1px solid var(--cc-border);
+  border-radius: var(--cc-radius-md);
+  padding: 16px;
+  margin-bottom: 16px;
+}
+article > header {
+  margin: -16px -16px 14px -16px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--cc-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+article > footer {
+  margin: 14px -16px -16px -16px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--cc-border);
+  background: var(--cc-bg-subtle);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+[role="alert"] {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  border-radius: var(--cc-radius);
+  border-left: 3px solid var(--cc-info);
+  background: var(--cc-info-bg);
+  color: var(--cc-text);
+  margin-bottom: 12px;
+  font-size: 12.5px;
+}
+[role="alert"][data-variant="success"] { border-left-color: var(--cc-success); background: var(--cc-success-bg); }
+[role="alert"][data-variant="warning"] { border-left-color: var(--cc-warning); background: var(--cc-warning-bg); }
+[role="alert"][data-variant="danger"]  { border-left-color: var(--cc-danger);  background: var(--cc-danger-bg); }
+
+progress {
+  width: 100%;
+  height: 4px;
+  appearance: none;
+  border: none;
+  background: var(--cc-primary-tint);
+  border-radius: 2px;
+  overflow: hidden;
+}
+progress::-webkit-progress-bar { background: var(--cc-primary-tint); }
+progress::-webkit-progress-value { background: var(--cc-primary); }
+
+dialog {
+  border: 1px solid var(--cc-border);
+  border-radius: var(--cc-radius-md);
+  padding: 0;
+  max-width: 480px;
+  width: 92%;
+  background: var(--cc-bg);
+  color: var(--cc-text);
+  box-shadow: var(--cc-shadow-lg);
+}
+dialog::backdrop {
+  background: rgba(32, 33, 36, 0.48);
+}
+dialog > article {
+  margin: 0;
+  border: none;
+}
+
+/* Pure CSS Tooltip ([data-tooltip="..."]) */
+[data-tooltip] {
+  position: relative;
+}
+[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 4px 8px;
+  border-radius: var(--cc-radius);
+  background: #3c4043;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 400;
+  text-transform: none;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 95;
+  box-shadow: var(--cc-shadow-sm);
+}
+
+/* Toast Notification Container */
+.cc-toast-stack {
+  position: fixed;
+  bottom: 18px;
+  right: 18px;
+  z-index: 120;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.cc-toast {
+  background: #323232;
+  color: #ffffff;
+  padding: 9px 14px;
+  border-radius: var(--cc-radius-md);
+  font-size: 12.5px;
+  box-shadow: var(--cc-shadow-md);
+  animation: cc-toast-in 160ms ease-out;
+}
+@keyframes cc-toast-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Minimal Layout Helpers */
+.cc-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.cc-between { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.cc-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
+
+@media (max-width: 900px) {
+  header[data-subheader] .product-title { width: auto; min-width: 0; border-right: none; }
+  .cc-shell { flex-direction: column; }
+  nav[data-rail] { width: 100%; flex-direction: row; height: 42px; border-right: none; border-bottom: 1px solid var(--cc-border); }
+  nav[data-rail] ul { flex-direction: row; }
+  aside[data-sidebar], aside[data-info-panel] { width: 100%; min-width: 0; border-right: none; border-left: none; border-bottom: 1px solid var(--cc-border); }
+}

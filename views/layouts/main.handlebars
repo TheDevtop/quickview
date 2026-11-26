@@ -6,44 +6,55 @@
 <title>{{title}} · Quickview</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&family=Roboto+Mono:wght@400;500&display=swap">
-<link rel="stylesheet" href="/static/query-ui.css">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined">
+<link rel="stylesheet" href="/static/cloud-console.css">
 <link rel="stylesheet" href="/static/app.css">
+<script src="/static/cloud-console.js" defer></script>
 <script src="/static/app.js" defer></script>
 </head>
 <body>
-<header class="bq-topbar">
-	<a class="brand" href="/">Quickview</a>
+<header data-topbar>
+	<a class="brand" href="/"><span class="material-icons">table_view</span>Quickview</a>
 	{{#if base}}
-	<form method="post" action="/disconnect" class="bq-flex">
-		<small class="addr" title="Quicktable server">{{base}}</small>
-		<button type="submit" class="ghost">Disconnect</button>
-	</form>
+	<div class="cc-row">
+		<span class="addr" title="Quicktable server"><span class="material-icons-outlined">dns</span><span>{{base}}</span></span>
+		<form method="post" action="/disconnect">
+			<button type="submit" class="ghost" aria-label="Disconnect"><span class="material-icons">logout</span><span class="wide">Disconnect</span></button>
+		</form>
+	</div>
 	{{/if}}
 </header>
-<div class="shell{{#unless base}} bare{{/unless}}">
+{{#if base}}
+<header data-subheader>
+	<div class="product-title"><span class="material-icons-outlined">storage</span>Quicktable</div>
+	<div class="subheader-bar">{{{sections.bar}}}</div>
+</header>
+{{/if}}
+<div class="cc-shell{{#unless base}} bare{{/unless}}">
 	{{#if base}}
-	<aside>
-		<div class="explorer">
-			<h6>Explorer</h6>
-			<form action="/new"><button type="submit" class="ghost">+ Table</button></form>
-		</div>
-		<nav data-vertical aria-label="Tables">
+	<aside data-sidebar>
+		<details data-nav-group open>
+			<summary>Tables</summary>
 			<ul>
+				<li><a href="/new"><span class="material-icons">add</span>Create table</a></li>
 				{{#each tables}}
-				<li><a href="/tables/{{u this}}"{{#if (eq this ../table)}} aria-current="page"{{/if}}>▦ {{this}}</a></li>
+				<li><a href="/tables/{{u this}}"{{#if (eq this ../table)}} aria-current="page"{{/if}}><span class="material-icons-outlined">table_chart</span>{{this}}</a></li>
 				{{else}}
 				<li><small class="empty">No tables</small></li>
 				{{/each}}
 			</ul>
-		</nav>
+		</details>
 	</aside>
 	{{/if}}
-	<main>
-		{{#if connerr}}<div role="alert" data-variant="danger">{{connerr}}</div>{{/if}}
-		{{#if err}}<div role="alert" data-variant="danger">{{err}}</div>{{/if}}
-		{{#if msg}}<div role="alert" data-variant="success">{{msg}}</div>{{/if}}
-		{{{body}}}
+	<main data-workspace>
+		{{{sections.tabs}}}
+		<div class="page">
+			{{#if connerr}}<div role="alert" data-variant="danger"><span class="material-icons">error</span>{{connerr}}</div>{{/if}}
+			{{#if err}}<div role="alert" data-variant="danger"><span class="material-icons">error</span>{{err}}</div>{{/if}}
+			{{#if msg}}<div role="alert" data-variant="success"><span class="material-icons">check_circle</span>{{msg}}</div>{{/if}}
+			{{{body}}}
+		</div>
 	</main>
 </div>
 </body>

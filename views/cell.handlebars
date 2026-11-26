@@ -1,13 +1,17 @@
-<nav aria-label="Breadcrumb"><ul><li><a href="/">Tables</a></li><li><a href="/tables/{{u table}}">{{table}}</a></li><li><a href="{{rowhref}}">{{key}}</a></li><li>{{column}}</li></ul></nav>
-<div class="toolbar">
-	<h1>{{column}} <span data-badge>{{type}}</span></h1>
-	<form method="post" action="{{rowhref}}/columns/{{u column}}/delete">
-		<button type="submit" class="danger">Delete cell</button>
-	</form>
-</div>
+{{#section 'bar'}}
+<nav aria-label="Breadcrumb"><ul>
+	<li><a href="/">Tables</a></li>
+	<li><a href="/tables/{{u table}}" class="breadcrumb-stack"><small>Table</small>{{table}}</a></li>
+	<li><a href="{{rowhref}}" class="breadcrumb-stack"><small>Row</small>{{key}}</a></li>
+	<li><span class="breadcrumb-stack"><small>Column</small>{{column}}</span></li>
+</ul></nav>
+<form method="post" action="{{rowhref}}/columns/{{u column}}/delete">
+	<button type="submit" class="danger"><span class="material-icons-outlined">delete</span>Delete cell</button>
+</form>
+{{/section}}
 
 <article>
-	<header><h3>Value</h3></header>
+	<header><h3>Value</h3><span data-pill>{{type}}</span></header>
 	<pre><code>{{v}}</code></pre>
 </article>
 
@@ -18,6 +22,6 @@
 			<textarea name="value" rows="3" aria-label="Value">{{v}}</textarea>
 			{{> typesel n="type" t=type}}
 		</div>
-		<footer><button type="submit">Save</button></footer>
+		<footer><button type="submit"><span class="material-icons">save</span>Save</button></footer>
 	</form>
 </article>

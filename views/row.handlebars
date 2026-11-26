@@ -1,24 +1,27 @@
-<nav aria-label="Breadcrumb"><ul><li><a href="/">Tables</a></li><li><a href="/tables/{{u table}}">{{table}}</a></li><li>{{key}}</li></ul></nav>
-<div class="toolbar">
-	<h1>Row <code>{{key}}</code></h1>
-	<form method="post" action="/tables/{{u table}}/rows/{{u key}}/delete">
-		<button type="submit" class="danger">Delete row</button>
-	</form>
-</div>
+{{#section 'bar'}}
+<nav aria-label="Breadcrumb"><ul>
+	<li><a href="/">Tables</a></li>
+	<li><a href="/tables/{{u table}}" class="breadcrumb-stack"><small>Table</small>{{table}}</a></li>
+	<li><span class="breadcrumb-stack"><small>Row</small>{{key}}</span></li>
+</ul></nav>
+<form method="post" action="/tables/{{u table}}/rows/{{u key}}/delete">
+	<button type="submit" class="danger"><span class="material-icons-outlined">delete</span>Delete row</button>
+</form>
+{{/section}}
 
 <article>
 	<header><h3>Columns</h3><small>{{list.length}} columns</small></header>
-	<div class="table-scroll">
-	<table>
+	<div class="table-wrap">
+	<table data-grid="clean">
 		<thead><tr><th>Column</th><th>Value</th><th>Type</th><th></th></tr></thead>
 		<tbody>
 			{{#each list}}
 			<tr>
 				<td><a href="{{href}}">{{name}}</a></td>
 				<td class="value">{{v}}</td>
-				<td><span data-badge>{{type}}</span></td>
+				<td><span data-pill>{{type}}</span></td>
 				<td class="num">
-					<form method="post" action="{{href}}/delete"><button type="submit" class="ghost">Delete</button></form>
+					<form method="post" action="{{href}}/delete"><button type="submit" class="icon" aria-label="Delete {{name}}" data-tooltip="Delete column"><span class="material-icons-outlined">delete</span></button></form>
 				</td>
 			</tr>
 			{{/each}}
@@ -27,7 +30,7 @@
 	</div>
 </article>
 
-<div class="bq-grid">
+<div class="cc-grid">
 	<article>
 		<header><h3>Set cell</h3></header>
 		<form method="post" action="/tables/{{u table}}/rows/{{u key}}/columns">

@@ -1,17 +1,19 @@
-<div class="toolbar">
-	<h1>Explorer</h1>
-	<a role="button" href="/new">+ Create table</a>
-</div>
+{{#section 'bar'}}
+<nav aria-label="Breadcrumb"><ul><li><h1>Tables</h1></li></ul></nav>
+<a role="button" class="ghost" href="/new"><span class="material-icons">add</span>Create table</a>
+{{/section}}
 
-<div class="table-scroll">
-<table>
-	<thead><tr><th>Table</th></tr></thead>
+<div class="panel">
+<div class="table-wrap">
+<table data-grid="clean">
+	<thead><tr><th>Name</th></tr></thead>
 	<tbody>
 		{{#each tables}}
-		<tr><td><a href="/tables/{{u this}}">▦ {{this}}</a></td></tr>
+		<tr><td><a href="/tables/{{u this}}" class="named"><span class="material-icons-outlined">table_chart</span>{{this}}</a></td></tr>
 		{{else}}
 		<tr><td class="missing">No tables yet</td></tr>
 		{{/each}}
 	</tbody>
 </table>
+</div>
 </div>

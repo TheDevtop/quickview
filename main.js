@@ -40,6 +40,13 @@ app.engine('handlebars', engine({
 		u: (s) => encodeURIComponent(s),
 		json: (v) => JSON.stringify(v, null, 2),
 		concat: (...a) => a.slice(0, -1).join(''),
+		// Views render before the layout, so a view can fill layout slots
+		// such as the subheader through the shared root context.
+		section(name, opts) {
+			opts.data.root.sections ??= {};
+			opts.data.root.sections[name] = opts.fn(this);
+			return null;
+		},
 	},
 }));
 app.set('view engine', 'handlebars');
