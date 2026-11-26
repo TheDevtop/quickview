@@ -12,12 +12,12 @@
 
 {{#section 'tabs'}}
 <nav role="tablist" aria-label="Table views">
-	<a role="tab" href="?tab=preview" aria-selected="{{eq tab 'preview'}}">Preview</a>
-	<a role="tab" href="?tab=keys" aria-selected="{{eq tab 'keys'}}">Row keys</a>
-	<a role="tab" href="?tab=query" aria-selected="{{eq tab 'query'}}">Query</a>
-	<a role="tab" href="?tab=insert" aria-selected="{{eq tab 'insert'}}">Insert row</a>
-	<a role="tab" href="?tab=batch" aria-selected="{{eq tab 'batch'}}">Batch</a>
-	<a role="tab" href="?tab=details" aria-selected="{{eq tab 'details'}}">Details</a>
+	<a role="tab" href="/tables/{{u table}}?tab=preview" aria-selected="{{eq tab 'preview'}}">Preview</a>
+	<a role="tab" href="/tables/{{u table}}?tab=keys" aria-selected="{{eq tab 'keys'}}">Row keys</a>
+	<a role="tab" href="/tables/{{u table}}?tab=query" aria-selected="{{eq tab 'query'}}">Query</a>
+	<a role="tab" href="/tables/{{u table}}?tab=insert" aria-selected="{{eq tab 'insert'}}">Insert row</a>
+	<a role="tab" href="/tables/{{u table}}?tab=batch" aria-selected="{{eq tab 'batch'}}">Batch</a>
+	<a role="tab" href="/tables/{{u table}}?tab=details" aria-selected="{{eq tab 'details'}}">Details</a>
 </nav>
 {{/section}}
 
@@ -29,10 +29,10 @@
 		{{#if (eq prev undefined)}}
 		<a role="button" class="icon" aria-disabled="true" aria-label="Previous page"><span class="material-icons">chevron_left</span></a>
 		{{else}}
-		<a role="button" class="icon" href="?tab=preview&page={{prev}}" aria-label="Previous page"><span class="material-icons">chevron_left</span></a>
+		<a role="button" class="icon" href="/tables/{{u table}}?tab=preview&page={{prev}}" aria-label="Previous page"><span class="material-icons">chevron_left</span></a>
 		{{/if}}
 		{{#if next}}
-		<a role="button" class="icon" href="?tab=preview&page={{next}}" aria-label="Next page"><span class="material-icons">chevron_right</span></a>
+		<a role="button" class="icon" href="/tables/{{u table}}?tab=preview&page={{next}}" aria-label="Next page"><span class="material-icons">chevron_right</span></a>
 		{{else}}
 		<a role="button" class="icon" aria-disabled="true" aria-label="Next page"><span class="material-icons">chevron_right</span></a>
 		{{/if}}
@@ -54,8 +54,8 @@
 	<header>
 		<h3>Query editor</h3>
 		<span class="cc-row">
-			<a role="button" class="ghost" href="?tab=query"{{#if (eq mode 'builder')}} aria-current="page"{{/if}}>Builder</a>
-			<a role="button" class="ghost" href="?tab=query&mode=json"{{#if (eq mode 'json')}} aria-current="page"{{/if}}>JSON</a>
+			<a role="button" class="ghost" href="/tables/{{u table}}?tab=query"{{#if (eq mode 'builder')}} aria-current="page"{{/if}}>Builder</a>
+			<a role="button" class="ghost" href="/tables/{{u table}}?tab=query&mode=json"{{#if (eq mode 'json')}} aria-current="page"{{/if}}>JSON</a>
 		</span>
 	</header>
 	<form method="post" action="/tables/{{u table}}/query">
