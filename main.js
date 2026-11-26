@@ -124,7 +124,7 @@ function fail(req, res, status, msg) {
 			table = undefined;
 		}
 	}
-	res.status(status).render('error', { title: `${status} ${reason}`, status, reason, msg, table, err: undefined });
+	res.status(status).render('error', { title: `${status} ${reason}`, status, reason, text: msg, table, err: undefined, msg: undefined });
 }
 
 app.use((req, res) => {

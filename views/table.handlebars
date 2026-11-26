@@ -94,6 +94,7 @@
 			<option value="get"{{#if (eq form.action 'get')}} selected{{/if}}>get — read rows by key</option>
 			<option value="delete"{{#if (eq form.action 'delete')}} selected{{/if}}>delete — delete rows by key</option>
 			<option value="write"{{#if (eq form.action 'write')}} selected{{/if}}>write — apply mutations atomically</option>
+			<option value="insert"{{#if (eq form.action 'insert')}} selected{{/if}}>insert — insert rows with generated keys</option>
 		</select>
 		<label for="rowKeys" class="gap">Row keys (get, delete) — whitespace or comma separated</label>
 		<textarea id="rowKeys" class="mono" name="rowKeys" rows="3" placeholder="a3f10c2b d81c4f9a">{{form.rowKeys}}</textarea>
@@ -103,6 +104,11 @@
   { "rowKey": "d81c4f9a", "delCols": ["temp_field"] },
   { "rowKey": "ff001122", "delete": true }
 ]'>{{form.mutations}}</textarea>
+		<label for="rows" class="gap">Rows (insert) — JSON array of column objects</label>
+		<textarea id="rows" class="mono" name="rows" rows="6" placeholder='[
+  { "email": "alice@example.com", "score": 0 },
+  { "email": "bob@example.com" }
+]'>{{form.rows}}</textarea>
 		<footer><button type="submit">▶ Run batch</button></footer>
 	</form>
 </article>
@@ -125,7 +131,12 @@
 		<h3>Results</h3>
 		{{#if elapsed}}<small>Query complete ({{elapsed}} ms elapsed){{#if result}} · {{result.count}} rows{{/if}}</small>{{/if}}
 	</header>
-	{{#if grid}}{{> grid grid}}{{else}}{{#if result}}{{#if (eq result.status undefined)}}<p class="big">{{result.count}}</p><small>matching rows</small>{{/if}}{{/if}}{{/if}}
+	{{#if inserted}}
+	<small>Inserted {{inserted.length}} rows</small>
+	<ul class="keys">
+		{{#each inserted}}<li><a href="{{href}}"><code>{{key}}</code></a></li>{{/each}}
+	</ul>
+	{{else}}{{#if grid}}{{> grid grid}}{{else}}{{#if result}}{{#if (eq result.status undefined)}}<p class="big">{{result.count}}</p><small>matching rows</small>{{/if}}{{/if}}{{/if}}{{/if}}
 	<details class="gap">
 		<summary>Request and response JSON</summary>
 		<div>

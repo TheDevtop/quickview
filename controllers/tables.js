@@ -249,6 +249,15 @@ async function batch(req, res) {
 			if (!Array.isArray(m))
 				throw bad('mutations must be a JSON array');
 			body.mutations = m;
+		} else if (b.action === 'insert') {
+			const r = json(b.rows, 'rows JSON');
+			if (!Array.isArray(r) || r.length === 0)
+				throw bad('rows must be a non-empty JSON array');
+			// As with single inserts, an empty row would get a key but store nothing.
+			for (const x of r)
+				if (x === null || typeof x !== 'object' || Array.isArray(x) || Object.keys(x).length === 0)
+					throw bad('every row must be a JSON object with at least one column');
+			body.rows = r;
 		} else {
 			body.rowKeys = (b.rowKeys ?? '').split(/[\s,]+/).filter((k) => k.length > 0);
 			if (body.rowKeys.length === 0)
@@ -256,6 +265,10 @@ async function batch(req, res) {
 		}
 		v.reqbody = body;
 		v.result = await req.qt.batch(t, body);
+		if (b.action === 'insert') {
+			v.inserted = (v.result.rowKeys ?? []).map((k) => ({ key: k, href: rowurl(t, k) }));
+			return res.render('table', v);
+		}
 		if (b.action !== 'get')
 			return back(res, tableurl(t, 'batch'), undefined, `Batch ${b.action} applied`);
 		const rows = Object.entries(v.result.rows ?? {}).map(([rowKey, columns]) => ({ rowKey, columns }));
