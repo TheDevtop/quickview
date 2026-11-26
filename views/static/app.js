@@ -1,4 +1,30 @@
-// "+ Column" clones the last column/value row and renumbers its field names.
+// The eye button toggles a password field between hidden and shown.
+document.addEventListener('click', (ev) => {
+	const btn = ev.target.closest('button[data-reveal]');
+	if (btn === null)
+		return;
+	const f = document.getElementById(btn.dataset.reveal);
+	const shown = f.type === 'password';
+	f.type = shown ? 'text' : 'password';
+	btn.setAttribute('aria-pressed', String(shown));
+	btn.setAttribute('aria-label', shown ? 'Hide token' : 'Show token');
+	btn.firstElementChild.textContent = shown ? 'visibility_off' : 'visibility';
+	f.focus();
+});
+
+// The batch form shows only the input the chosen action reads.
+function batchfields(sel) {
+	for (const d of sel.form.querySelectorAll('[data-action]'))
+		d.hidden = !d.dataset.action.split(' ').includes(sel.value);
+}
+document.addEventListener('change', (ev) => {
+	if (ev.target.matches('select[data-batch]'))
+		batchfields(ev.target);
+});
+for (const sel of document.querySelectorAll('select[data-batch]'))
+	batchfields(sel);
+
+// "+ Column" and "+ Filter" clone the last row and renumbers its field names.
 document.addEventListener('click', (ev) => {
 	const btn = ev.target.closest('button[data-add]');
 	if (btn === null)

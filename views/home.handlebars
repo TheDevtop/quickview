@@ -6,12 +6,12 @@
 <div class="panel">
 <div class="table-wrap">
 <table data-grid="clean">
-	<thead><tr><th>Name</th></tr></thead>
+	<thead><tr><th>Name <small>({{tables.length}})</small></th></tr></thead>
 	<tbody>
 		{{#each tables}}
 		<tr><td><a href="/tables/{{u this}}" class="named"><span class="material-icons-outlined">table_chart</span>{{this}}</a></td></tr>
 		{{else}}
-		<tr><td class="missing">No tables yet</td></tr>
+		<tr><td class="missing">No tables yet. <a href="/new">Create the first one</a>; a table exists once it holds a cell.</td></tr>
 		{{/each}}
 	</tbody>
 </table>

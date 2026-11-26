@@ -2,7 +2,12 @@
 	<header><h3>Connect to Quicktable</h3><span class="material-icons-outlined">storage</span></header>
 	<form method="post" action="/connect">
 		<label for="url">Server address</label>
-		<input id="url" name="url" value="{{url}}" placeholder="http://localhost:8080" required autofocus>
+		<input id="url" name="url" type="url" value="{{url}}" placeholder="http://localhost:8080" required>
+		<label for="token" class="gap">Bearer token</label>
+		<div class="reveal">
+			<input id="token" name="token" type="password" autocomplete="off" spellcheck="false" required autofocus>
+			<button type="button" class="icon" data-reveal="token" aria-label="Show token" aria-pressed="false"><span class="material-icons-outlined">visibility</span></button>
+		</div>
 		<footer><button type="submit"><span class="material-icons">link</span>Connect</button></footer>
 	</form>
 </article>

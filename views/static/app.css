@@ -19,7 +19,18 @@ main[data-workspace] > [role="tablist"] { flex-shrink: 0; }
 .connect { max-width: 480px; margin: 48px auto; }
 .big { font-size: 32px; margin: 0; }
 .named { display: inline-flex; align-items: center; gap: 8px; }
-.cols + button[data-add] { margin-top: 4px; }
+.cols + button[data-add],
+.preds + button[data-add] { margin-top: 4px; }
+.hint { display: block; margin-top: 6px; color: var(--cc-text-muted); }
+.reveal { display: grid; grid-template-columns: 1fr auto; gap: 4px; align-items: center; }
+.goto { display: inline-flex; align-items: center; gap: 4px; margin: 0; }
+.goto input { width: 150px; font-family: var(--cc-font-mono); }
+form.only { margin-bottom: 10px; }
+form.only input { flex: 1; max-width: 360px; }
+dl.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 8px 0 0; }
+dl.stats dt { color: var(--cc-text-muted); font-size: 12px; }
+dl.stats dd { margin: 0; font-size: 24px; font-family: var(--cc-font-mono); }
+dd [data-pill] { margin: 0 4px 4px 0; }
 
 article form footer { display: flex; justify-content: flex-end; gap: 8px; margin: 14px -16px -16px -16px; padding: 10px 16px; border-top: 1px solid var(--cc-border); background: var(--cc-bg-subtle); }
 article > header small { margin-left: auto; }
@@ -32,6 +43,8 @@ a[role="button"].ghost[aria-current] { background-color: var(--cc-primary-tint);
 .pred-row { display: grid; gap: 8px; margin-bottom: 8px; align-items: start; }
 .cell-row { grid-template-columns: 1fr 2fr 100px; }
 .pred-row { grid-template-columns: 1fr 120px 2fr 100px; }
+.pred-row.grouped { grid-template-columns: 64px 1fr 120px 2fr 100px; }
+.pred-row.head { margin-bottom: 2px; color: var(--cc-text-muted); }
 label.check { display: inline-flex; align-items: center; margin: 0 16px 0 0; color: var(--cc-text); font-weight: 400; }
 textarea.mono { font-family: var(--cc-font-mono); font-size: 12.5px; }
 
@@ -53,7 +66,10 @@ ul.keys li { padding: 2px 0; }
 	header[data-subheader] .subheader-bar { padding: 8px 16px; }
 	nav[aria-label="Breadcrumb"] ul { flex-wrap: wrap; row-gap: 4px; }
 	.page { padding: 16px; }
-	.pred-row { grid-template-columns: 1fr 1fr; }
+	.pred-row,
+	.pred-row.grouped { grid-template-columns: 1fr 1fr; }
+	.pred-row.head { display: none; }
+	.goto input { width: 110px; }
 	[role="tablist"] { overflow-x: auto; }
 	[role="tab"] { flex-shrink: 0; white-space: nowrap; }
 }

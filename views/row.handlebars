@@ -9,8 +9,15 @@
 </form>
 {{/section}}
 
+<datalist id="colnames">{{#each list}}<option value="{{name}}">{{/each}}</datalist>
+
 <article>
 	<header><h3>Columns</h3><small>{{list.length}} columns</small></header>
+	<form method="get" action="/tables/{{u table}}/rows/{{u key}}" class="cc-row only">
+		<input name="cols" value="{{only}}" placeholder="Show only columns: email, age" aria-label="Show only columns">
+		<button type="submit" class="ghost"><span class="material-icons">filter_list</span>Filter</button>
+		{{#if only}}<a role="button" class="ghost" href="/tables/{{u table}}/rows/{{u key}}">Clear</a>{{/if}}
+	</form>
 	<div class="table-wrap">
 	<table data-grid="clean">
 		<thead><tr><th>Column</th><th>Value</th><th>Type</th><th></th></tr></thead>
@@ -24,6 +31,8 @@
 					<form method="post" action="{{href}}/delete"><button type="submit" class="icon" aria-label="Delete {{name}}" data-tooltip="Delete column"><span class="material-icons-outlined">delete</span></button></form>
 				</td>
 			</tr>
+			{{else}}
+			<tr><td colspan="4" class="missing">{{#if only}}None of these columns exist{{else}}No columns{{/if}}</td></tr>
 			{{/each}}
 		</tbody>
 	</table>
@@ -35,7 +44,7 @@
 		<header><h3>Set cell</h3></header>
 		<form method="post" action="/tables/{{u table}}/rows/{{u key}}/columns">
 			<div class="cell-row">
-				<input name="column" placeholder="column" aria-label="Column" required>
+				<input name="column" placeholder="column" aria-label="Column" list="colnames" required>
 				<input name="value" placeholder="value" aria-label="Value">
 				{{> typesel n="type" t="string"}}
 			</div>
@@ -52,7 +61,7 @@
 					<option value="append">append</option>
 					<option value="prepend">prepend</option>
 				</select>
-				<input name="column" placeholder="column" aria-label="Column" required>
+				<input name="column" placeholder="column" aria-label="Column" list="colnames" required>
 				<input name="value" placeholder="delta / text" aria-label="Value">
 			</div>
 			<footer><button type="submit">Apply</button></footer>
@@ -73,7 +82,7 @@
 	<form method="post" action="/tables/{{u table}}/rows/{{u key}}/cas">
 		<h5>If</h5>
 		<div class="pred-row">
-			<input name="column" placeholder="column" aria-label="Condition column">
+			<input name="column" placeholder="column" aria-label="Condition column" list="colnames">
 			{{> opsel n="op" o="="}}
 			<input name="value" placeholder="value" aria-label="Condition value">
 			{{> typesel n="type" t="string"}}
@@ -81,5 +90,21 @@
 		<h5 class="gap">Then set</h5>
 		{{> cols list=setcols n="cols"}}
 		<footer><button type="submit">Check and set</button></footer>
+	</form>
+</article>
+
+<article>
+	<header><h3>Check-and-delete</h3><small>Leave the condition column empty to delete unconditionally</small></header>
+	<form method="post" action="/tables/{{u table}}/rows/{{u key}}/cad">
+		<h5>If</h5>
+		<div class="pred-row">
+			<input name="column" placeholder="column" aria-label="Condition column" list="colnames">
+			{{> opsel n="op" o="="}}
+			<input name="value" placeholder="value" aria-label="Condition value">
+			{{> typesel n="type" t="string"}}
+		</div>
+		<h5 class="gap">Then delete</h5>
+		<input name="delCols" placeholder="columns, comma separated; leave empty to delete the whole row" aria-label="Columns to delete">
+		<footer><button type="submit" class="danger"><span class="material-icons-outlined">delete</span>Check and delete</button></footer>
 	</form>
 </article>

@@ -63,38 +63,59 @@ function cookie(req, name) {
 	return undefined;
 }
 
+// The token is never echoed back into a page; it only lives in an httpOnly cookie.
+function connectform(res, url, err) {
+	res.render('connect', { title: 'Connect', url, err });
+}
+
 app.get('/connect', (req, res) => {
-	res.render('connect', { title: 'Connect', url: cookie(req, 'qt') ?? addr, err: req.query.err });
+	connectform(res, cookie(req, 'qt') ?? addr, req.query.err);
 });
 
 app.post('/connect', async (req, res) => {
 	const url = (req.body.url ?? '').trim();
+	const token = (req.body.token ?? '').trim();
 	try {
 		if (!/^https?:\/\/[^\s]+$/.test(url))
 			throw new Error('address must start with http:// or https://');
-		await qt.client(url).health();
+		if (token === '')
+			throw new Error('bearer token is required');
+		const c = qt.client(url, token);
+		await c.health();
+		await c.tables();
 	} catch (err) {
-		return res.render('connect', { title: 'Connect', url, err: tc.fmterr(err) });
+		return connectform(res, url, tc.fmterr(err));
 	}
-	res.cookie('qt', url, { httpOnly: true, sameSite: 'lax' });
+	const opts = { httpOnly: true, sameSite: 'lax', secure: req.secure };
+	res.cookie('qt', url, opts);
+	res.cookie('qtt', token, opts);
 	res.redirect('/');
 });
 
+// signout forgets the token and sends the browser back to /connect.
+function signout(res, err) {
+	res.clearCookie('qtt');
+	res.redirect('/connect' + (err !== undefined ? '?err=' + encodeURIComponent(tc.fmterr(err)) : ''));
+}
+
 app.post('/disconnect', (req, res) => {
 	res.clearCookie('qt');
-	res.redirect('/connect');
+	signout(res);
 });
 
 // Everything past here needs a server; every page shows the table explorer.
 app.use(async (req, res, next) => {
 	const base = cookie(req, 'qt');
-	if (base === undefined)
+	const token = cookie(req, 'qtt');
+	if (base === undefined || token === undefined)
 		return res.redirect('/connect');
-	req.qt = qt.client(base);
+	req.qt = qt.client(base, token);
 	Object.assign(res.locals, { base: req.qt.base, ops, types, msg: req.query.msg, err: req.query.err });
 	try {
 		res.locals.tables = (await req.qt.tables()).tables ?? [];
 	} catch (err) {
+		if (err.status === 401)
+			return signout(res, err);
 		res.locals.tables = [];
 		res.locals.connerr = tc.fmterr(err);
 	}
@@ -105,7 +126,9 @@ app.get('/', tc.home);
 app.get('/new', tc.newtable);
 app.post('/tables', tc.create);
 app.get('/tables/:table', tc.table);
+app.get('/tables/:table/goto', tc.goto);
 app.post('/tables/:table/query', tc.query);
+app.post('/tables/:table/delete', tc.qdelete);
 app.post('/tables/:table/rows', tc.insert);
 app.post('/tables/:table/batch', tc.batch);
 app.post('/tables/:table/drop', tc.drop);
@@ -114,6 +137,7 @@ app.post('/tables/:table/rows/:row', tc.setrow);
 app.post('/tables/:table/rows/:row/delete', tc.delrow);
 app.post('/tables/:table/rows/:row/atomic', tc.atomic);
 app.post('/tables/:table/rows/:row/cas', tc.cas);
+app.post('/tables/:table/rows/:row/cad', tc.cad);
 app.post('/tables/:table/rows/:row/columns', tc.setcell);
 app.get('/tables/:table/rows/:row/columns/:column', tc.cell);
 app.post('/tables/:table/rows/:row/columns/:column', tc.setcell);
@@ -140,6 +164,8 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
 	const status = err.status ?? 500;
+	if (status === 401)
+		return signout(res, err);
 	if (status >= 500)
 		process.stderr.write(`quickview: ${req.method} ${req.path}: ${err.message}\n`);
 	fail(req, res, status, err.message);

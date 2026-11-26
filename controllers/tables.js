@@ -2,9 +2,9 @@ const pagesize = 50;
 const nvalue = ['EXISTS', 'MISSING'];
 const atomics = ['incr', 'append', 'prepend'];
 
-function bad(msg) {
+function bad(msg, status) {
 	const err = new Error(msg);
-	err.status = 400;
+	err.status = status ?? 400;
 	return err;
 }
 
@@ -81,10 +81,20 @@ function int(raw, what) {
 	return n;
 }
 
+// entries lists form rows; the body parser turns long arrays into objects.
+function entries(list) {
+	return Object.values(list ?? {});
+}
+
+// names splits a comma separated list of column names.
+function names(raw) {
+	return (raw ?? '').split(',').map((s) => s.trim()).filter((s) => s.length > 0);
+}
+
 // cols turns form rows [{name, value, type}] into a column map.
 function cols(list) {
 	const m = {};
-	for (const c of list ?? []) {
+	for (const c of entries(list)) {
 		if (c.name === undefined || c.name === '')
 			continue;
 		m[c.name] = parse(c.type, c.value);
@@ -125,20 +135,28 @@ function grid(t, rows) {
 	};
 }
 
-function querybody(b) {
-	if (b.mode === 'json')
-		return json(b.json, 'query JSON') ?? {};
+// filled drops empty filter rows, keeping at least one row for the form.
+function filled(where) {
+	const list = entries(where).filter((w) => w.column !== undefined && w.column !== '');
+	return list.length > 0 ? list : blanks(1);
+}
 
+function pred(column, op, type, value) {
+	const p = { column, op };
+	if (!nvalue.includes(op))
+		p.value = parse(type, value);
+	return p;
+}
+
+// filterbody builds the fields shared by query and delete-by-query.
+// Filters with the same group are ANDed; more than one group becomes an OR.
+function filterbody(b) {
 	const q = {};
 	for (const f of ['prefix', 'startKey', 'endKey'])
 		if (b[f] !== undefined && b[f] !== '')
 			q[f] = b[f];
-	if (b.select !== undefined && b.select.trim() !== '')
-		q.select = b.select.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
 	if (b.orderDesc === 'on')
 		q.orderDesc = true;
-	if (b.countOnly === 'on')
-		q.countOnly = true;
 	const offset = int(b.offset, 'offset');
 	if (offset !== undefined)
 		q.offset = offset;
@@ -146,18 +164,45 @@ function querybody(b) {
 	if (limit !== undefined)
 		q.limit = limit;
 
-	const where = [];
-	for (const w of b.where ?? []) {
+	const groups = new Map();
+	for (const w of entries(b.where)) {
 		if (w.column === undefined || w.column === '')
 			continue;
-		const p = { column: w.column, op: w.op };
-		if (!nvalue.includes(w.op))
-			p.value = parse(w.type, w.value);
-		where.push(p);
+		const g = (w.group ?? '').trim() === '' ? '1' : w.group.trim();
+		if (!groups.has(g))
+			groups.set(g, []);
+		groups.get(g).push(pred(w.column, w.op, w.type, w.value));
 	}
-	if (where.length > 0)
-		q.where = where;
+	const list = [...groups.values()];
+	if (list.length === 1)
+		q.where = list[0];
+	if (list.length > 1)
+		q.or = list;
 	return q;
+}
+
+function querybody(b) {
+	if (b.mode === 'json')
+		return json(b.json, 'query JSON') ?? {};
+
+	const q = filterbody(b);
+	const sel = names(b.select);
+	if (sel.length > 0)
+		q.select = sel;
+	if (b.countOnly === 'on')
+		q.countOnly = true;
+	if (b.aggregate !== undefined && b.aggregate.trim() !== '')
+		q.aggregate = b.aggregate.trim();
+	return q;
+}
+
+// colnames suggests column names; a failure only loses the suggestions.
+async function colnames(req, t) {
+	try {
+		return (await req.qt.columns(t)).columns ?? [];
+	} catch {
+		return [];
+	}
 }
 
 async function home(req, res) {
@@ -183,7 +228,7 @@ async function create(req, res) {
 async function table(req, res) {
 	const t = req.params.table;
 	const tab = req.query.tab ?? 'preview';
-	const v = { title: t, table: t, tab, mode: req.query.mode ?? 'builder', form: {}, where: blanks(2), cols: blanks(1) };
+	const v = { title: t, table: t, tab, mode: req.query.mode ?? 'builder', form: {}, where: blanks(1), cols: blanks(1) };
 
 	if (tab === 'preview') {
 		const page = int(req.query.page, 'page') ?? 0;
@@ -201,6 +246,8 @@ async function table(req, res) {
 	}
 	if (tab === 'keys')
 		v.keys = (await req.qt.rows(t)).rows ?? [];
+	if (['details', 'query', 'delete', 'insert'].includes(tab))
+		v.colnames = await colnames(req, t);
 	res.render('table', v);
 }
 
@@ -208,8 +255,7 @@ async function query(req, res) {
 	const t = req.params.table;
 	const b = req.body;
 	const mode = b.mode === 'json' ? 'json' : 'builder';
-	const where = (b.where ?? []).filter((w) => w.column !== undefined && w.column !== '');
-	const v = { title: t, table: t, tab: 'query', mode, form: b, where: where.concat(blanks(1)), cols: blanks(1) };
+	const v = { title: t, table: t, tab: 'query', mode, form: b, where: filled(b.where), cols: blanks(1), colnames: await colnames(req, t) };
 
 	try {
 		const q = querybody(b);
@@ -227,6 +273,48 @@ async function query(req, res) {
 	res.render('table', v);
 }
 
+// qdelete previews or deletes the rows matching the filters.
+async function qdelete(req, res) {
+	const t = req.params.table;
+	const b = req.body;
+	const v = { title: t, table: t, tab: 'delete', form: b, where: filled(b.where), cols: blanks(1), colnames: await colnames(req, t) };
+
+	try {
+		const q = filterbody(b);
+		// The server deletes every row for an empty body.
+		const scoped = Object.keys(q).some((k) => k !== 'orderDesc');
+		if (b.do === 'preview') {
+			v.reqbody = q;
+			v.result = await req.qt.query(t, q);
+			v.grid = grid(t, v.result.rows ?? []);
+			v.preview = true;
+			return res.render('table', v);
+		}
+		if (!scoped && b.all !== 'on')
+			throw bad('no filters given; tick "Delete every row" to empty the table');
+		const r = await req.qt.qdelete(t, q);
+		back(res, tableurl(t, 'delete'), undefined, `Deleted ${r.deleted} rows`);
+	} catch (err) {
+		v.err = fmterr(err);
+		res.render('table', v);
+	}
+}
+
+// goto opens a row by key, checking that it exists first.
+async function goto(req, res) {
+	const t = req.params.table;
+	const k = (req.query.key ?? '').trim().toLowerCase();
+	try {
+		if (!/^[0-9a-f]{8}$/.test(k))
+			throw bad('a row key is 8 hexadecimal characters');
+		if (!await req.qt.hasrow(t, k))
+			throw bad(`no row ${k} in ${t}`, 404);
+		res.redirect(rowurl(t, k));
+	} catch (err) {
+		back(res, tableurl(t, req.query.tab), err);
+	}
+}
+
 async function insert(req, res) {
 	const t = req.params.table;
 	try {
@@ -240,7 +328,7 @@ async function insert(req, res) {
 async function batch(req, res) {
 	const t = req.params.table;
 	const b = req.body;
-	const v = { title: t, table: t, tab: 'batch', form: b, where: blanks(2), cols: blanks(1) };
+	const v = { title: t, table: t, tab: 'batch', form: b, where: blanks(1), cols: blanks(1) };
 
 	try {
 		const body = { action: b.action };
@@ -293,11 +381,15 @@ async function drop(req, res) {
 
 async function row(req, res) {
 	const { table: t, row: k } = req.params;
-	const r = await req.qt.getrow(t, k);
+	const only = names(req.query.cols);
+	const r = await req.qt.getrow(t, k, only);
 	const list = Object.entries(r.columns ?? {})
 		.sort(([a], [b]) => a.localeCompare(b))
 		.map(([name, v]) => ({ name, v: show(v), type: typeof_(v), href: rowurl(t, k) + '/columns/' + encodeURIComponent(name) }));
-	res.render('row', { title: `${t} / ${k}`, table: t, key: k, list, cols: blanks(1), setcols: blanks(1) });
+	res.render('row', {
+		title: `${t} / ${k}`, table: t, key: k, list, cols: blanks(1), setcols: blanks(1),
+		only: only.length > 0 ? only.join(', ') : undefined,
+	});
 }
 
 async function setrow(req, res) {
@@ -345,13 +437,29 @@ async function cas(req, res) {
 	const b = req.body;
 	try {
 		const body = { setCols: cols(b.cols) };
-		if (b.column !== undefined && b.column !== '') {
-			body.condition = { column: b.column, op: b.op };
-			if (!nvalue.includes(b.op))
-				body.condition.value = parse(b.type, b.value);
-		}
+		if (b.column !== undefined && b.column !== '')
+			body.condition = pred(b.column, b.op, b.type, b.value);
 		await req.qt.cas(t, k, body);
 		back(res, rowurl(t, k), undefined, 'Check-and-set applied');
+	} catch (err) {
+		back(res, rowurl(t, k), err);
+	}
+}
+
+async function cad(req, res) {
+	const { table: t, row: k } = req.params;
+	const b = req.body;
+	try {
+		const body = {};
+		if (b.column !== undefined && b.column !== '')
+			body.condition = pred(b.column, b.op, b.type, b.value);
+		const del = names(b.delCols);
+		if (del.length > 0)
+			body.delCols = del;
+		await req.qt.cad(t, k, body);
+		if (del.length === 0)
+			return back(res, tableurl(t), undefined, `Check-and-delete removed row ${k}`);
+		back(res, rowurl(t, k), undefined, `Check-and-delete removed ${del.join(', ')}`);
 	} catch (err) {
 		back(res, rowurl(t, k), err);
 	}
@@ -388,6 +496,6 @@ async function delcell(req, res) {
 }
 
 module.exports = {
-	fmterr, home, newtable, create, table, query, insert, batch, drop,
-	row, setrow, delrow, atomic, cas, cell, setcell, delcell,
+	fmterr, home, newtable, create, table, goto, query, qdelete, insert, batch, drop,
+	row, setrow, delrow, atomic, cas, cad, cell, setcell, delcell,
 };

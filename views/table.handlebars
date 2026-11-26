@@ -4,9 +4,12 @@
 	<li><span class="breadcrumb-stack"><small>Table</small>{{table}}</span></li>
 </ul></nav>
 <span class="cc-row">
-	<a role="button" class="ghost" href="/tables/{{u table}}?tab=query"><span class="material-icons">search</span>Query</a>
-	<a role="button" class="ghost" href="/tables/{{u table}}?tab=insert"><span class="material-icons">add</span>Insert row</a>
-	<a role="button" class="ghost" href="/tables/{{u table}}"><span class="material-icons">refresh</span>Refresh</a>
+	<form method="get" action="/tables/{{u table}}/goto" class="goto">
+		<input type="hidden" name="tab" value="{{tab}}">
+		<input name="key" placeholder="Go to row key" aria-label="Row key" pattern="[0-9a-fA-F]{8}" maxlength="8" title="8 hexadecimal characters" required>
+		<button type="submit" class="icon" aria-label="Go to row"><span class="material-icons">arrow_forward</span></button>
+	</form>
+	<a role="button" class="ghost" href="/tables/{{u table}}?tab={{tab}}"><span class="material-icons">refresh</span>Refresh</a>
 </span>
 {{/section}}
 
@@ -17,9 +20,12 @@
 	<a role="tab" href="/tables/{{u table}}?tab=query" aria-selected="{{eq tab 'query'}}">Query</a>
 	<a role="tab" href="/tables/{{u table}}?tab=insert" aria-selected="{{eq tab 'insert'}}">Insert row</a>
 	<a role="tab" href="/tables/{{u table}}?tab=batch" aria-selected="{{eq tab 'batch'}}">Batch</a>
+	<a role="tab" href="/tables/{{u table}}?tab=delete" aria-selected="{{eq tab 'delete'}}">Delete rows</a>
 	<a role="tab" href="/tables/{{u table}}?tab=details" aria-selected="{{eq tab 'details'}}">Details</a>
 </nav>
 {{/section}}
+
+{{#if colnames}}<datalist id="colnames">{{#each colnames}}<option value="{{this}}">{{/each}}</datalist>{{/if}}
 
 {{#if (eq tab 'preview')}}
 <div class="panel">
@@ -61,30 +67,17 @@
 	<form method="post" action="/tables/{{u table}}/query">
 		<input type="hidden" name="mode" value="{{mode}}">
 		{{#if (eq mode 'json')}}
-		<textarea class="mono" name="json" rows="14" aria-label="Query JSON" placeholder='{ "prefix": "a3", "select": ["email"], "where": [{ "column": "age", "op": ">=", "value": 18 }], "limit": 50 }'>{{form.json}}</textarea>
+		<textarea class="mono" name="json" rows="14" aria-label="Query JSON" placeholder='{ "prefix": "a3", "select": ["email"], "or": [[{ "column": "age", "op": ">=", "value": 18 }], [{ "column": "age", "op": "MISSING" }]], "limit": 50 }'>{{form.json}}</textarea>
+		<small class="hint">Fields: prefix, startKey, endKey, select, orderDesc, offset, limit, where, or, countOnly, aggregate.</small>
 		{{else}}
 		<div class="fields">
-			<div><label>Key prefix</label><input name="prefix" value="{{form.prefix}}" placeholder="a3"></div>
-			<div><label>Start key (inclusive)</label><input name="startKey" value="{{form.startKey}}"></div>
-			<div><label>End key (inclusive)</label><input name="endKey" value="{{form.endKey}}"></div>
 			<div><label>Select columns</label><input name="select" value="{{form.select}}" placeholder="all columns; or email, age"></div>
-			<div><label>Offset</label><input type="number" min="0" name="offset" value="{{form.offset}}"></div>
-			<div><label>Limit</label><input type="number" min="0" name="limit" value="{{form.limit}}"></div>
+			<div><label>Aggregate column</label><input name="aggregate" value="{{form.aggregate}}" placeholder="numeric column for count, sum, min, max, avg" list="colnames"></div>
 		</div>
 		<div class="cc-row gap">
-			<label class="check"><input type="checkbox" role="switch" name="orderDesc"{{#if (eq form.orderDesc 'on')}} checked{{/if}}>Descending key order</label>
 			<label class="check"><input type="checkbox" role="switch" name="countOnly"{{#if (eq form.countOnly 'on')}} checked{{/if}}>Count only</label>
 		</div>
-		<h5 class="gap">Where (all must match)</h5>
-		{{#each where}}
-		<div class="pred-row">
-			<input name="where[{{@index}}][column]" value="{{column}}" placeholder="column" aria-label="Column">
-			{{> opsel n=(concat 'where[' @index '][op]') o=op}}
-			<input name="where[{{@index}}][value]" value="{{value}}" placeholder="value" aria-label="Value">
-			{{> typesel n=(concat 'where[' @index '][type]') t=type}}
-		</div>
-		{{/each}}
-		<small>Submitting adds another empty filter row. EXISTS and MISSING ignore the value.</small>
+		{{> filters}}
 		{{/if}}
 		<footer><button type="submit"><span class="material-icons">play_arrow</span>Run</button></footer>
 	</form>
@@ -106,26 +99,49 @@
 	<header><h3>Batch operation</h3></header>
 	<form method="post" action="/tables/{{u table}}/batch">
 		<label for="action">Action</label>
-		<select id="action" name="action">
+		<select id="action" name="action" data-batch>
 			<option value="get"{{#if (eq form.action 'get')}} selected{{/if}}>get — read rows by key</option>
 			<option value="delete"{{#if (eq form.action 'delete')}} selected{{/if}}>delete — delete rows by key</option>
 			<option value="write"{{#if (eq form.action 'write')}} selected{{/if}}>write — apply mutations atomically</option>
 			<option value="insert"{{#if (eq form.action 'insert')}} selected{{/if}}>insert — insert rows with generated keys</option>
 		</select>
-		<label for="rowKeys" class="gap">Row keys (get, delete) — whitespace or comma separated</label>
+		<div data-action="get delete">
+		<label for="rowKeys" class="gap">Row keys — whitespace or comma separated</label>
 		<textarea id="rowKeys" class="mono" name="rowKeys" rows="3" placeholder="a3f10c2b d81c4f9a">{{form.rowKeys}}</textarea>
-		<label for="mutations" class="gap">Mutations (write) — JSON array</label>
+		</div>
+		<div data-action="write">
+		<label for="mutations" class="gap">Mutations — JSON array</label>
 		<textarea id="mutations" class="mono" name="mutations" rows="8" placeholder='[
   { "rowKey": "a3f10c2b", "setCols": { "score": 100 } },
   { "rowKey": "d81c4f9a", "delCols": ["temp_field"] },
   { "rowKey": "ff001122", "delete": true }
 ]'>{{form.mutations}}</textarea>
-		<label for="rows" class="gap">Rows (insert) — JSON array of column objects</label>
+		</div>
+		<div data-action="insert">
+		<label for="rows" class="gap">Rows — JSON array of column objects</label>
 		<textarea id="rows" class="mono" name="rows" rows="6" placeholder='[
   { "email": "alice@example.com", "score": 0 },
   { "email": "bob@example.com" }
 ]'>{{form.rows}}</textarea>
+		</div>
 		<footer><button type="submit"><span class="material-icons">play_arrow</span>Run batch</button></footer>
+	</form>
+</article>
+{{/if}}
+
+{{#if (eq tab 'delete')}}
+<article>
+	<header><h3>Delete rows</h3><span data-pill data-badge="danger">Cannot be undone</span></header>
+	<p>Deletes every row matching the filters in one transaction. Preview shows the rows that would be deleted. Very large deletes can fail as a whole; use Limit to delete in chunks.</p>
+	<form method="post" action="/tables/{{u table}}/delete">
+		{{> filters}}
+		<div class="cc-row gap">
+			<label class="check"><input type="checkbox" role="switch" name="all">Delete every row when no filters are given</label>
+		</div>
+		<footer>
+			<button type="submit" name="do" value="preview" class="secondary"><span class="material-icons">visibility</span>Preview</button>
+			<button type="submit" name="do" value="delete" class="danger"><span class="material-icons-outlined">delete_sweep</span>Delete matching</button>
+		</footer>
 	</form>
 </article>
 {{/if}}
@@ -136,6 +152,7 @@
 	<dl>
 		<dt>Table name</dt><dd>{{table}}</dd>
 		<dt>Server</dt><dd><code>{{base}}</code></dd>
+		<dt>Columns</dt><dd>{{#each colnames}}<span data-pill>{{this}}</span> {{else}}<span class="missing">None</span>{{/each}}</dd>
 	</dl>
 </article>
 <article>
@@ -151,8 +168,8 @@
 {{#if reqbody}}
 <article>
 	<header>
-		<h3>Results</h3>
-		{{#if elapsed}}<small class="cc-status-ready">Query complete ({{elapsed}} ms elapsed){{#if result}} · {{result.count}} rows{{/if}}</small>{{/if}}
+		<h3>{{#if preview}}Rows that would be deleted{{else}}Results{{/if}}</h3>
+		{{#if elapsed}}<small class="cc-status-ready">Query complete ({{elapsed}} ms elapsed){{#unless (eq result.count undefined)}} · {{result.count}} rows{{/unless}}</small>{{/if}}
 	</header>
 	<div role="tablist" data-cc-tabs>
 		<button type="button" role="tab" aria-selected="true" aria-controls="res-out">Results</button>
@@ -164,7 +181,19 @@
 		<ul class="keys">
 			{{#each inserted}}<li><a href="{{href}}"><code>{{key}}</code></a></li>{{/each}}
 		</ul>
-		{{else}}{{#if grid}}{{> grid grid}}{{else}}{{#if result}}{{#if (eq result.status undefined)}}<p class="big">{{result.count}}</p><small>matching rows</small>{{/if}}{{/if}}{{/if}}{{/if}}
+		{{else if grid}}
+		{{> grid grid}}
+		{{else if result.stats}}
+		<small>Over {{result.stats.count}} numeric values of <strong>{{result.column}}</strong></small>
+		<dl class="stats">
+			<div><dt>Sum</dt><dd>{{result.stats.sum}}</dd></div>
+			<div><dt>Average</dt><dd>{{result.stats.avg}}</dd></div>
+			<div><dt>Minimum</dt><dd>{{result.stats.min}}</dd></div>
+			<div><dt>Maximum</dt><dd>{{result.stats.max}}</dd></div>
+		</dl>
+		{{else if (eq result.status undefined)}}
+		<p class="big">{{result.count}}</p><small>matching rows</small>
+		{{/if}}
 	</div>
 	<div id="res-json" role="tabpanel" hidden>
 		<h6>Request</h6><pre><code>{{json reqbody}}</code></pre>
