@@ -1,5 +1,7 @@
 // Client for the Quicktable REST API (docs/rest.md).
 
+// This link to the Quicktable docs need to be kept up-to-date
+const docs = `https://github.com/TheDevtop/quicktable/blob/v1.0.0/docs/rest.md`;
 const ops = ['scan', 'get', 'values', 'query', 'batch', 'incr'];
 
 async function call(base, token, method, path, body) {
@@ -47,4 +49,4 @@ function client(base, token) {
 	return c;
 }
 
-module.exports = { ops, client };
+module.exports = { version, docs, ops, client };

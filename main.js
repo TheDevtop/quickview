@@ -112,7 +112,7 @@ app.use(async (req, res, next) => {
 	if (base === undefined || token === undefined)
 		return res.redirect('/connect');
 	req.qt = qt.client(base, token);
-	Object.assign(res.locals, { base: req.qt.base, ops: qt.ops, cmps, types, aggs, msg: req.query.msg, err: req.query.err });
+	Object.assign(res.locals, { base: req.qt.base, docs: qt.docs, ops: qt.ops, cmps, types, aggs, msg: req.query.msg, err: req.query.err });
 	try {
 		res.locals.tables = (await req.qt.scan()).names;
 	} catch (err) {
