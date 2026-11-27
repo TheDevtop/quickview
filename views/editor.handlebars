@@ -1,0 +1,24 @@
+{{#section 'bar'}}
+<nav aria-label="Breadcrumb"><ul><li><a href="/">Explorer</a></li><li>Editor</li></ul></nav>
+<a role="button" class="ghost" href="https://github.com/TheDevtop/quicktable/blob/v1.0.0/docs/rest.md" target="_blank" rel="noopener"><span class="material-icons-outlined">help_outline</span>API reference</a>
+{{/section}}
+
+<form method="post" action="/editor" class="editor" data-editor{{#if fresh}} data-fresh{{/if}}{{#if qtable}} data-table="{{qtable}}"{{/if}}>
+	<div class="editor-bar">
+		<button type="submit"><span class="material-icons">play_arrow</span>Run</button>
+		<label class="op"><span>POST /api/</span>
+			<select name="op" aria-label="Operation" data-op>{{#each ops}}<option{{#if (eq this ../op)}} selected{{/if}}>{{this}}</option>{{/each}}</select>
+		</label>
+		<button type="button" class="ghost" data-format><span class="material-icons">format_align_left</span>Format</button>
+		<small class="hint"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to run</small>
+	</div>
+	<div class="cc-sql-editor">
+		<pre class="cc-sql-gutter" aria-hidden="true"></pre>
+		<textarea class="cc-sql-input" name="json" rows="{{lines}}" spellcheck="false" aria-label="Request JSON" autofocus>{{text}}</textarea>
+	</div>
+</form>
+
+{{#if r}}
+<div class="cc-split-divider"></div>
+{{> results r=r}}
+{{/if}}

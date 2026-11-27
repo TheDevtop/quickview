@@ -1,13 +1,16 @@
 {{#section 'bar'}}
-<nav aria-label="Breadcrumb"><ul><li><a href="/">Tables</a></li><li>Create table</li></ul></nav>
+<nav aria-label="Breadcrumb"><ul><li><a href="/">Explorer</a></li><li>Create table</li></ul></nav>
 {{/section}}
 
 <article class="narrow">
 	<header><h3>Create table</h3><small>A table exists while it holds at least one cell</small></header>
 	<form method="post" action="/tables">
-		<label for="table">Table name</label>
-		<input id="table" name="table" required placeholder="users" autofocus>
+		<label for="table">Table ID</label>
+		<input id="table" name="table" required placeholder="users" pattern="\S+" title="No whitespace" autofocus>
 		<h5 class="gap">First row</h5>
+		<label for="key">Row key</label>
+		<input id="key" name="key" required placeholder="ann" pattern="\S+" title="No whitespace">
+		<h5 class="gap">Columns</h5>
 		{{> cols list=cols n="cols"}}
 		<footer><button type="submit"><span class="material-icons">add</span>Create table</button></footer>
 	</form>

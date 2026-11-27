@@ -34,20 +34,32 @@
 <div class="cc-shell{{#unless base}} bare{{/unless}}">
 	{{#if base}}
 	<aside data-sidebar>
-		<details data-nav-group open>
-			<summary>Tables</summary>
-			<ul>
-				<li><a href="/new"><span class="material-icons">add</span>Create table</a></li>
-				{{#each tables}}
-				<li><a href="/tables/{{u this}}"{{#if (eq this ../table)}} aria-current="page"{{/if}}><span class="material-icons-outlined">table_chart</span>{{this}}</a></li>
-				{{else}}
-				<li><small class="empty">No tables</small></li>
-				{{/each}}
-			</ul>
-		</details>
+		<div class="explorer-head">
+			<h2>Explorer</h2>
+			<a role="button" class="ghost" href="/new"><span class="material-icons">add</span>Add</a>
+		</div>
+		<div role="search" class="explorer-search">
+			<span class="material-icons">search</span>
+			<input type="search" placeholder="Search for tables" aria-label="Search for tables" data-filter="tables">
+		</div>
+		<ul class="tree" id="tables">
+			{{#each tables}}
+			<li><a class="tree-leaf" href="/tables/{{u this}}"{{#if (eq this ../table)}} aria-selected="true"{{/if}}><span class="material-icons-outlined">table_chart</span><span class="trunc">{{this}}</span></a></li>
+			{{else}}
+			<li><small class="empty">No tables</small></li>
+			{{/each}}
+		</ul>
 	</aside>
 	{{/if}}
 	<main data-workspace>
+		{{#if base}}
+		<div data-workspace-tabbar>
+			<div class="tab-scroll-list">
+				<a class="ws-tab" aria-selected="true" href="{{#if table}}/tables/{{u table}}{{else}}#{{/if}}"><span class="material-icons-outlined">{{#if icon}}{{icon}}{{else}}table_chart{{/if}}</span><span class="trunc">{{title}}</span></a>
+			</div>
+			<a class="compose" href="/editor{{#if table}}?table={{u table}}{{/if}}"><span class="material-icons">add</span>Compose new query</a>
+		</div>
+		{{/if}}
 		{{{sections.tabs}}}
 		<div class="page">
 			{{#if connerr}}<div role="alert" data-variant="danger"><span class="material-icons">error</span>{{connerr}}</div>{{/if}}

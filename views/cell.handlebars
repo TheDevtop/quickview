@@ -1,11 +1,11 @@
 {{#section 'bar'}}
 <nav aria-label="Breadcrumb"><ul>
-	<li><a href="/">Tables</a></li>
+	<li><a href="/">Explorer</a></li>
 	<li><a href="/tables/{{u table}}" class="breadcrumb-stack"><small>Table</small>{{table}}</a></li>
 	<li><a href="{{rowhref}}" class="breadcrumb-stack"><small>Row</small>{{key}}</a></li>
 	<li><span class="breadcrumb-stack"><small>Column</small>{{column}}</span></li>
 </ul></nav>
-<form method="post" action="{{rowhref}}/columns/{{u column}}/delete">
+<form method="post" action="{{href}}/delete">
 	<button type="submit" class="danger"><span class="material-icons-outlined">delete</span>Delete cell</button>
 </form>
 {{/section}}
@@ -15,13 +15,27 @@
 	<pre><code>{{v}}</code></pre>
 </article>
 
-<article>
-	<header><h3>Set cell</h3></header>
-	<form method="post" action="{{rowhref}}/columns/{{u column}}">
-		<div class="cell-row">
-			<textarea name="value" rows="3" aria-label="Value">{{v}}</textarea>
-			{{> typesel n="type" t=type}}
-		</div>
-		<footer><button type="submit"><span class="material-icons">save</span>Save</button></footer>
-	</form>
-</article>
+<div class="cc-grid">
+	<article>
+		<header><h3>Set cell</h3></header>
+		<form method="post" action="{{href}}">
+			<div class="cell-row wide">
+				<textarea name="value" rows="3" aria-label="Value">{{v}}</textarea>
+				{{> typesel n="type" t=type}}
+			</div>
+			<footer><button type="submit"><span class="material-icons">save</span>Save</button></footer>
+		</form>
+	</article>
+
+	{{#if (eq type 'number')}}
+	<article>
+		<header><h3>Increment</h3></header>
+		<form method="post" action="{{rowhref}}/incr">
+			<input type="hidden" name="column" value="{{column}}">
+			<input type="hidden" name="back" value="cell">
+			<input name="delta" value="1" aria-label="Delta" inputmode="decimal" required>
+			<footer><button type="submit"><span class="material-icons">exposure_plus_1</span>Increment</button></footer>
+		</form>
+	</article>
+	{{/if}}
+</div>

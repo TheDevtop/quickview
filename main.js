@@ -4,10 +4,11 @@ const { engine } = require('express-handlebars');
 const qt = require('./models/quicktable');
 const tc = require('./controllers/tables');
 
-const ops = ['=', '!=', '>', '>=', '<', '<=', 'CONTAINS', 'PREFIX', 'EXISTS', 'MISSING'];
-const types = ['string', 'number', 'bool'];
+const cmps = ['=', '!=', '<', '<=', '>', '>=', 'prefix', 'contains', 'exists', 'missing'];
+const types = ['string', 'number', 'boolean'];
+const aggs = ['count', 'sum', 'avg', 'min', 'max'];
 
-let addr = process.env.QUICKTABLE_URL ?? 'http://localhost:8080';
+let addr = process.env.QUICKTABLE_URL ?? 'http://localhost:16000';
 let port = Number(process.env.PORT ?? 3000);
 
 function usage() {
@@ -38,6 +39,7 @@ app.engine('handlebars', engine({
 	helpers: {
 		eq: (a, b) => a === b,
 		u: (s) => encodeURIComponent(s),
+		inc: (n) => n + 1,
 		json: (v) => JSON.stringify(v, null, 2),
 		concat: (...a) => a.slice(0, -1).join(''),
 		// Views render before the layout, so a view can fill layout slots
@@ -82,7 +84,7 @@ app.post('/connect', async (req, res) => {
 			throw new Error('bearer token is required');
 		const c = qt.client(url, token);
 		await c.health();
-		await c.tables();
+		await c.scan();
 	} catch (err) {
 		return connectform(res, url, tc.fmterr(err));
 	}
@@ -110,9 +112,9 @@ app.use(async (req, res, next) => {
 	if (base === undefined || token === undefined)
 		return res.redirect('/connect');
 	req.qt = qt.client(base, token);
-	Object.assign(res.locals, { base: req.qt.base, ops, types, msg: req.query.msg, err: req.query.err });
+	Object.assign(res.locals, { base: req.qt.base, ops: qt.ops, cmps, types, aggs, msg: req.query.msg, err: req.query.err });
 	try {
-		res.locals.tables = (await req.qt.tables()).tables ?? [];
+		res.locals.tables = (await req.qt.scan()).names;
 	} catch (err) {
 		if (err.status === 401)
 			return signout(res, err);
@@ -123,22 +125,21 @@ app.use(async (req, res, next) => {
 });
 
 app.get('/', tc.home);
+app.get('/editor', tc.editor);
+app.post('/editor', tc.exec);
 app.get('/new', tc.newtable);
 app.post('/tables', tc.create);
 app.get('/tables/:table', tc.table);
 app.get('/tables/:table/goto', tc.goto);
 app.post('/tables/:table/query', tc.query);
-app.post('/tables/:table/delete', tc.qdelete);
 app.post('/tables/:table/rows', tc.insert);
-app.post('/tables/:table/batch', tc.batch);
 app.post('/tables/:table/drop', tc.drop);
+app.post('/tables/:table/dropcol', tc.dropcol);
 app.get('/tables/:table/rows/:row', tc.row);
 app.post('/tables/:table/rows/:row', tc.setrow);
 app.post('/tables/:table/rows/:row/delete', tc.delrow);
-app.post('/tables/:table/rows/:row/atomic', tc.atomic);
-app.post('/tables/:table/rows/:row/cas', tc.cas);
-app.post('/tables/:table/rows/:row/cad', tc.cad);
-app.post('/tables/:table/rows/:row/columns', tc.setcell);
+app.post('/tables/:table/rows/:row/incr', tc.incr);
+app.post('/tables/:table/rows/:row/cond', tc.cond);
 app.get('/tables/:table/rows/:row/columns/:column', tc.cell);
 app.post('/tables/:table/rows/:row/columns/:column', tc.setcell);
 app.post('/tables/:table/rows/:row/columns/:column/delete', tc.delcell);
@@ -155,7 +156,7 @@ function fail(req, res, status, msg) {
 			table = undefined;
 		}
 	}
-	res.status(status).render('error', { title: `${status} ${reason}`, status, reason, text: msg, table, err: undefined, msg: undefined });
+	res.status(status).render('error', { title: `${status} ${reason}`, icon: 'error_outline', status, reason, text: msg, table, err: undefined, msg: undefined });
 }
 
 app.use((req, res) => {

@@ -1,5 +1,5 @@
 {{#section 'bar'}}
-<nav aria-label="Breadcrumb"><ul><li><a href="/">Tables</a></li>{{#if table}}<li><a href="/tables/{{u table}}">{{table}}</a></li>{{/if}}<li>{{status}} {{reason}}</li></ul></nav>
+<nav aria-label="Breadcrumb"><ul><li><a href="/">Explorer</a></li>{{#if table}}<li><a href="/tables/{{u table}}">{{table}}</a></li>{{/if}}<li>{{status}} {{reason}}</li></ul></nav>
 {{/section}}
 
 <article class="narrow">
@@ -7,6 +7,6 @@
 	<p>{{text}}</p>
 	<footer>
 		{{#if table}}<a role="button" class="secondary" href="/tables/{{u table}}"><span class="material-icons">arrow_back</span>Back to {{table}}</a>{{/if}}
-		<a role="button" class="{{#if table}}ghost{{else}}secondary{{/if}}" href="/">Tables</a>
+		<a role="button" class="{{#if table}}ghost{{else}}secondary{{/if}}" href="/">Explorer</a>
 	</footer>
 </article>

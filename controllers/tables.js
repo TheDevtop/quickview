@@ -1,6 +1,7 @@
+const qt = require('../models/quicktable');
+
 const pagesize = 50;
-const nvalue = ['EXISTS', 'MISSING'];
-const atomics = ['incr', 'append', 'prepend'];
+const nvalue = ['exists', 'missing'];
 
 function bad(msg, status) {
 	const err = new Error(msg);
@@ -26,6 +27,10 @@ function rowurl(t, k) {
 	return '/tables/' + encodeURIComponent(t) + '/rows/' + encodeURIComponent(k);
 }
 
+function cellurl(t, k, c) {
+	return rowurl(t, k) + '/columns/' + encodeURIComponent(c);
+}
+
 // HTML forms only carry strings, so every value comes with a type.
 function parse(type, raw) {
 	raw = raw ?? '';
@@ -39,7 +44,7 @@ function parse(type, raw) {
 			throw bad(`integer out of range: "${raw}"`);
 		return n;
 	}
-	case 'bool':
+	case 'boolean':
 		if (raw === 'true')
 			return true;
 		if (raw === 'false')
@@ -52,7 +57,7 @@ function parse(type, raw) {
 
 function typeof_(v) {
 	if (typeof v === 'boolean')
-		return 'bool';
+		return 'boolean';
 	if (typeof v === 'number')
 		return 'number';
 	return 'string';
@@ -62,16 +67,6 @@ function show(v) {
 	return typeof v === 'string' ? v : JSON.stringify(v);
 }
 
-function json(raw, what) {
-	if (raw === undefined || raw.trim() === '')
-		return undefined;
-	try {
-		return JSON.parse(raw);
-	} catch (err) {
-		throw bad(`${what}: ${err.message}`);
-	}
-}
-
 function int(raw, what) {
 	if (raw === undefined || raw === '')
 		return undefined;
@@ -79,6 +74,13 @@ function int(raw, what) {
 	if (!Number.isInteger(n) || n < 0)
 		throw bad(`${what} must be a non-negative integer`);
 	return n;
+}
+
+function need(raw, what) {
+	const s = (raw ?? '').trim();
+	if (s === '')
+		throw bad(`${what} is required`);
+	return s;
 }
 
 // entries lists form rows; the body parser turns long arrays into objects.
@@ -91,48 +93,263 @@ function names(raw) {
 	return (raw ?? '').split(',').map((s) => s.trim()).filter((s) => s.length > 0);
 }
 
-// cols turns form rows [{name, value, type}] into a column map.
-function cols(list) {
-	const m = {};
-	for (const c of entries(list)) {
-		if (c.name === undefined || c.name === '')
-			continue;
-		m[c.name] = parse(c.type, c.value);
-	}
-	return m;
-}
-
-// newcols is cols for inserts: an empty insert returns a key but stores no row.
-function newcols(list) {
-	const m = cols(list);
-	if (Object.keys(m).length === 0)
-		throw bad('at least one column is required');
-	return m;
-}
-
 function blanks(n) {
 	return Array.from({ length: n }, () => ({ type: 'string' }));
 }
 
-// grid flattens [{rowKey, columns}] into a table with the union of all columns.
+// sets turns form rows [{name, value, type}] into batch set operations.
+function sets(t, k, list) {
+	const ops = [];
+	for (const c of entries(list)) {
+		if (c.name === undefined || c.name.trim() === '')
+			continue;
+		ops.push({ op: 'set', table: t, row: k, column: c.name.trim(), value: parse(c.type, c.value) });
+	}
+	return ops;
+}
+
+function pred(column, cmp, type, value) {
+	const p = { column, cmp };
+	if (!nvalue.includes(cmp))
+		p.value = parse(type, value);
+	return p;
+}
+
+// grid flattens [{key, row}] into a table with the union of all columns.
 function grid(t, rows) {
-	const names = [];
+	const cols = [];
 	for (const r of rows)
-		for (const c of Object.keys(r.columns ?? {}))
-			if (!names.includes(c))
-				names.push(c);
-	names.sort();
+		for (const c of Object.keys(r.row ?? {}))
+			if (!cols.includes(c))
+				cols.push(c);
+	cols.sort();
 	return {
-		cols: names,
+		cols,
 		rows: rows.map((r) => ({
-			key: r.rowKey,
-			href: rowurl(t, r.rowKey),
-			vals: names.map((c) => {
-				const v = r.columns?.[c];
+			key: r.key,
+			href: rowurl(t, r.key),
+			vals: cols.map((c) => {
+				const v = r.row?.[c];
 				return v === undefined ? { missing: true } : { v: show(v), num: typeof v === 'number' };
 			}),
 		})),
 	};
+}
+
+// kv is a two column result: one value per name.
+function kv(head, list) {
+	return { head, list: list.map(([name, v, href]) => ({ name, href, v: show(v), type: v === null ? 'null' : typeof_(v) })) };
+}
+
+// view turns any API response into something the results panel can draw.
+function view(op, body, out) {
+	const t = typeof body.table === 'string' ? body.table : '';
+	if (out.names !== undefined) {
+		let href;
+		if (t === '')
+			href = (n) => tableurl(n);
+		else if (body.columns !== true)
+			href = (n) => rowurl(t, n);
+		const head = t === '' ? 'table' : body.columns === true ? 'column' : 'row key';
+		return { names: { head, list: out.names.map((n) => ({ n, href: href?.(n) })) }, count: out.names.length };
+	}
+	if (out.rows !== undefined)
+		return { grid: grid(t, out.rows), count: out.rows.length };
+	if (out.table !== undefined) {
+		const rows = Object.entries(out.table).map(([key, row]) => ({ key, row }));
+		return { grid: grid(t, rows), count: rows.length };
+	}
+	if (out.row !== undefined) {
+		const list = Object.entries(out.row).sort(([a], [b]) => a.localeCompare(b))
+			.map(([c, v]) => [c, v, cellurl(t, body.row, c)]);
+		return { kv: kv('column', list), count: list.length };
+	}
+	if (out.column !== undefined) {
+		const list = Object.entries(out.column).map(([k, v]) => [k, v, cellurl(t, k, body.column)]);
+		return { kv: kv('row key', list), count: list.length };
+	}
+	if (out.values !== undefined) {
+		const list = out.values.map((v, i) => {
+			const c = body.cells[i];
+			return [`${c.table} / ${c.row} / ${c.column}`, v, v === null ? undefined : cellurl(c.table, c.row, c.column)];
+		});
+		return { kv: kv('cell', list), count: list.length };
+	}
+	if (out.value !== undefined)
+		return { value: { v: show(out.value), type: typeof_(out.value), label: op === 'incr' ? 'new value' : body.agg } };
+	return { status: op === 'batch' ? `Batch applied (${body.ops?.length ?? 0} ops)` : 'ok' };
+}
+
+// run sends one request and times it for the execution details tab.
+async function run(req, op, body) {
+	const start = performance.now();
+	const out = await req.qt[op](body);
+	const ms = (performance.now() - start).toFixed(1);
+	return { op, req: body, out, ms, ...view(op, body, out) };
+}
+
+// templates fill an empty editor with a request for the chosen operation.
+function template(op, t) {
+	t = t ?? 'users';
+	switch (op) {
+	case 'scan':
+		return { table: t };
+	case 'get':
+		return { table: t, row: 'ann' };
+	case 'values':
+		return { cells: [{ table: t, row: 'ann', column: 'age' }, { table: t, row: 'bob', column: 'age' }] };
+	case 'batch':
+		return { ops: [
+			{ op: 'if', table: t, row: 'ann', column: 'age', cmp: 'exists' },
+			{ op: 'set', table: t, row: 'ann', column: 'age', value: 32 },
+		] };
+	case 'incr':
+		return { table: t, row: 'ann', column: 'visits', delta: 1 };
+	default:
+		return { table: t, where: [{ column: 'age', cmp: '>=', value: 18 }], limit: 100 };
+	}
+}
+
+function editorview(op, text, r, err) {
+	return { title: 'Untitled query', icon: 'search', op, text, lines: text.split('\n').length, r, err };
+}
+
+async function editor(req, res) {
+	const op = qt.ops.includes(req.query.op) ? req.query.op : 'query';
+	const text = JSON.stringify(template(op, req.query.table), null, 2);
+	res.render('editor', { ...editorview(op, text), fresh: true, qtable: req.query.table });
+}
+
+async function exec(req, res) {
+	const op = req.body.op;
+	const text = req.body.json ?? '';
+	try {
+		if (!qt.ops.includes(op))
+			throw bad(`unknown operation: ${op}`);
+		let body;
+		try {
+			body = text.trim() === '' ? {} : JSON.parse(text);
+		} catch (err) {
+			throw bad(`request JSON: ${err.message}`);
+		}
+		if (body === null || typeof body !== 'object' || Array.isArray(body))
+			throw bad('request must be a JSON object');
+		res.render('editor', editorview(op, text, await run(req, op, body)));
+	} catch (err) {
+		res.render('editor', editorview(qt.ops.includes(op) ? op : 'query', text, undefined, fmterr(err)));
+	}
+}
+
+async function home(req, res) {
+	res.render('home', { title: 'Explorer', icon: 'home' });
+}
+
+async function newtable(req, res) {
+	res.render('new', { title: 'Create table', icon: 'add_box', cols: blanks(1) });
+}
+
+async function create(req, res) {
+	try {
+		const t = need(req.body.table, 'table name');
+		const k = need(req.body.key, 'row key');
+		const ops = sets(t, k, req.body.cols);
+		if (ops.length === 0)
+			throw bad('at least one column is required');
+		await req.qt.batch({ ops });
+		back(res, rowurl(t, k), undefined, `Created table ${t} with row ${k}`);
+	} catch (err) {
+		back(res, '/new', err);
+	}
+}
+
+// preview pages by row key: from is the first key of the page.
+// One extra row tells whether there is a next page and where it starts;
+// a reverse scan up to from finds where the previous page starts.
+async function preview(req, t, v) {
+	const from = req.query.from;
+	const q = { table: t, limit: pagesize + 1 };
+	if (from !== undefined)
+		q.from = from;
+	const [n, r, p] = await Promise.all([
+		req.qt.query({ table: t, agg: 'count' }),
+		req.qt.query(q),
+		from === undefined ? undefined : req.qt.query({ table: t, to: from, reverse: true, limit: pagesize }),
+	]);
+	const rows = r.rows.slice(0, pagesize);
+	v.total = n.value;
+	v.grid = grid(t, rows);
+	v.first = rows[0]?.key;
+	v.last = rows.at(-1)?.key;
+	if (r.rows.length > pagesize)
+		v.next = r.rows[pagesize].key;
+	if (p !== undefined) {
+		v.hasprev = true;
+		v.prev = p.rows.length === pagesize ? p.rows.at(-1).key : undefined;
+	}
+}
+
+// details reads the row count and the key range.
+async function details(req, t, v) {
+	const [n, a, z] = await Promise.all([
+		req.qt.query({ table: t, agg: 'count' }),
+		req.qt.query({ table: t, limit: 1 }),
+		req.qt.query({ table: t, limit: 1, reverse: true }),
+	]);
+	v.count = n.value;
+	v.firstkey = a.rows[0]?.key;
+	v.lastkey = z.rows[0]?.key;
+}
+
+function tableview(t, tab, form) {
+	return { title: t, table: t, tab, form: form ?? {}, where: blanks(1), cols: blanks(1) };
+}
+
+async function table(req, res) {
+	const t = req.params.table;
+	const v = tableview(t, req.query.tab ?? 'preview');
+
+	switch (v.tab) {
+	case 'details':
+		await details(req, t, v);
+		break;
+	case 'preview':
+		await preview(req, t, v);
+		break;
+	case 'keys':
+		v.keys = (await req.qt.scan({ table: t })).names;
+		break;
+	}
+	if (['details', 'query', 'insert'].includes(v.tab))
+		v.colnames = (await req.qt.scan({ table: t, columns: true })).names.sort();
+	res.render('table', v);
+}
+
+// querybody builds a query request from the builder form.
+function querybody(t, b) {
+	const q = { table: t };
+	for (const f of ['prefix', 'from', 'to'])
+		if (b[f] !== undefined && b[f] !== '')
+			q[f] = b[f];
+	const where = [];
+	for (const w of entries(b.where))
+		if (w.column !== undefined && w.column.trim() !== '')
+			where.push(pred(w.column.trim(), w.cmp, w.type, w.value));
+	if (where.length > 0)
+		q.where = where;
+	const sel = names(b.select);
+	if (sel.length > 0)
+		q.select = sel;
+	const limit = int(b.limit, 'limit');
+	if (limit !== undefined)
+		q.limit = limit;
+	if (b.reverse === 'on')
+		q.reverse = true;
+	if (b.agg !== undefined && b.agg !== '') {
+		q.agg = b.agg;
+		if (b.agg !== 'count')
+			q.column = need(b.column, 'aggregate column');
+	}
+	return q;
 }
 
 // filled drops empty filter rows, keeping at least one row for the form.
@@ -141,230 +358,48 @@ function filled(where) {
 	return list.length > 0 ? list : blanks(1);
 }
 
-function pred(column, op, type, value) {
-	const p = { column, op };
-	if (!nvalue.includes(op))
-		p.value = parse(type, value);
-	return p;
-}
-
-// filterbody builds the fields shared by query and delete-by-query.
-// Filters with the same group are ANDed; more than one group becomes an OR.
-function filterbody(b) {
-	const q = {};
-	for (const f of ['prefix', 'startKey', 'endKey'])
-		if (b[f] !== undefined && b[f] !== '')
-			q[f] = b[f];
-	if (b.orderDesc === 'on')
-		q.orderDesc = true;
-	const offset = int(b.offset, 'offset');
-	if (offset !== undefined)
-		q.offset = offset;
-	const limit = int(b.limit, 'limit');
-	if (limit !== undefined)
-		q.limit = limit;
-
-	const groups = new Map();
-	for (const w of entries(b.where)) {
-		if (w.column === undefined || w.column === '')
-			continue;
-		const g = (w.group ?? '').trim() === '' ? '1' : w.group.trim();
-		if (!groups.has(g))
-			groups.set(g, []);
-		groups.get(g).push(pred(w.column, w.op, w.type, w.value));
-	}
-	const list = [...groups.values()];
-	if (list.length === 1)
-		q.where = list[0];
-	if (list.length > 1)
-		q.or = list;
-	return q;
-}
-
-function querybody(b) {
-	if (b.mode === 'json')
-		return json(b.json, 'query JSON') ?? {};
-
-	const q = filterbody(b);
-	const sel = names(b.select);
-	if (sel.length > 0)
-		q.select = sel;
-	if (b.countOnly === 'on')
-		q.countOnly = true;
-	if (b.aggregate !== undefined && b.aggregate.trim() !== '')
-		q.aggregate = b.aggregate.trim();
-	return q;
-}
-
-// colnames suggests column names; a failure only loses the suggestions.
-async function colnames(req, t) {
-	try {
-		return (await req.qt.columns(t)).columns ?? [];
-	} catch {
-		return [];
-	}
-}
-
-async function home(req, res) {
-	res.render('home', { title: 'Explorer' });
-}
-
-async function newtable(req, res) {
-	res.render('new', { title: 'Create table', cols: blanks(1) });
-}
-
-async function create(req, res) {
-	const t = req.body.table ?? '';
-	try {
-		if (t === '')
-			throw bad('table name is required');
-		const r = await req.qt.insert(t, newcols(req.body.cols));
-		back(res, rowurl(t, r.rowKey), undefined, `Created table ${t} with row ${r.rowKey}`);
-	} catch (err) {
-		back(res, '/new', err);
-	}
-}
-
-async function table(req, res) {
-	const t = req.params.table;
-	const tab = req.query.tab ?? 'preview';
-	const v = { title: t, table: t, tab, mode: req.query.mode ?? 'builder', form: {}, where: blanks(1), cols: blanks(1) };
-
-	if (tab === 'preview') {
-		const page = int(req.query.page, 'page') ?? 0;
-		const [n, r] = await Promise.all([
-			req.qt.query(t, { countOnly: true }),
-			req.qt.query(t, { offset: page * pagesize, limit: pagesize }),
-		]);
-		v.total = n.count;
-		v.grid = grid(t, r.rows ?? []);
-		v.page = page;
-		v.from = n.count === 0 ? 0 : page * pagesize + 1;
-		v.to = page * pagesize + v.grid.rows.length;
-		v.prev = page > 0 ? page - 1 : undefined;
-		v.next = v.to < n.count ? page + 1 : undefined;
-	}
-	if (tab === 'keys')
-		v.keys = (await req.qt.rows(t)).rows ?? [];
-	if (['details', 'query', 'delete', 'insert'].includes(tab))
-		v.colnames = await colnames(req, t);
-	res.render('table', v);
-}
-
 async function query(req, res) {
 	const t = req.params.table;
 	const b = req.body;
-	const mode = b.mode === 'json' ? 'json' : 'builder';
-	const v = { title: t, table: t, tab: 'query', mode, form: b, where: filled(b.where), cols: blanks(1), colnames: await colnames(req, t) };
+	const v = tableview(t, 'query', b);
+	v.where = filled(b.where);
 
 	try {
-		const q = querybody(b);
-		v.reqbody = q;
-		if (mode === 'json')
-			b.json = JSON.stringify(q, null, 2);
-		const start = performance.now();
-		v.result = await req.qt.query(t, q);
-		v.elapsed = (performance.now() - start).toFixed(1);
-		if (v.result.rows !== undefined)
-			v.grid = grid(t, v.result.rows);
+		v.colnames = (await req.qt.scan({ table: t, columns: true })).names.sort();
+		const q = querybody(t, b);
+		if (b.do === 'editor')
+			return res.render('editor', editorview('query', JSON.stringify(q, null, 2)));
+		v.r = await run(req, 'query', q);
 	} catch (err) {
 		v.err = fmterr(err);
 	}
 	res.render('table', v);
-}
-
-// qdelete previews or deletes the rows matching the filters.
-async function qdelete(req, res) {
-	const t = req.params.table;
-	const b = req.body;
-	const v = { title: t, table: t, tab: 'delete', form: b, where: filled(b.where), cols: blanks(1), colnames: await colnames(req, t) };
-
-	try {
-		const q = filterbody(b);
-		// The server deletes every row for an empty body.
-		const scoped = Object.keys(q).some((k) => k !== 'orderDesc');
-		if (b.do === 'preview') {
-			v.reqbody = q;
-			v.result = await req.qt.query(t, q);
-			v.grid = grid(t, v.result.rows ?? []);
-			v.preview = true;
-			return res.render('table', v);
-		}
-		if (!scoped && b.all !== 'on')
-			throw bad('no filters given; tick "Delete every row" to empty the table');
-		const r = await req.qt.qdelete(t, q);
-		back(res, tableurl(t, 'delete'), undefined, `Deleted ${r.deleted} rows`);
-	} catch (err) {
-		v.err = fmterr(err);
-		res.render('table', v);
-	}
 }
 
 // goto opens a row by key, checking that it exists first.
 async function goto(req, res) {
 	const t = req.params.table;
-	const k = (req.query.key ?? '').trim().toLowerCase();
 	try {
-		if (!/^[0-9a-f]{8}$/.test(k))
-			throw bad('a row key is 8 hexadecimal characters');
-		if (!await req.qt.hasrow(t, k))
-			throw bad(`no row ${k} in ${t}`, 404);
+		const k = need(req.query.key, 'row key');
+		await req.qt.get({ table: t, row: k });
 		res.redirect(rowurl(t, k));
 	} catch (err) {
-		back(res, tableurl(t, req.query.tab), err);
+		back(res, tableurl(t, req.query.tab), err.status === 404 ? bad(`no row "${req.query.key}" in ${t}`, 404) : err);
 	}
 }
 
 async function insert(req, res) {
 	const t = req.params.table;
 	try {
-		const r = await req.qt.insert(t, newcols(req.body.cols));
-		back(res, rowurl(t, r.rowKey), undefined, `Inserted row ${r.rowKey}`);
+		const k = need(req.body.key, 'row key');
+		const ops = sets(t, k, req.body.cols);
+		if (ops.length === 0)
+			throw bad('at least one column is required');
+		await req.qt.batch({ ops });
+		back(res, rowurl(t, k), undefined, `Wrote row ${k}`);
 	} catch (err) {
 		back(res, tableurl(t, 'insert'), err);
 	}
-}
-
-async function batch(req, res) {
-	const t = req.params.table;
-	const b = req.body;
-	const v = { title: t, table: t, tab: 'batch', form: b, where: blanks(1), cols: blanks(1) };
-
-	try {
-		const body = { action: b.action };
-		if (b.action === 'write') {
-			const m = json(b.mutations, 'mutations JSON');
-			if (!Array.isArray(m))
-				throw bad('mutations must be a JSON array');
-			body.mutations = m;
-		} else if (b.action === 'insert') {
-			const r = json(b.rows, 'rows JSON');
-			if (!Array.isArray(r) || r.length === 0)
-				throw bad('rows must be a non-empty JSON array');
-			// As with single inserts, an empty row would get a key but store nothing.
-			for (const x of r)
-				if (x === null || typeof x !== 'object' || Array.isArray(x) || Object.keys(x).length === 0)
-					throw bad('every row must be a JSON object with at least one column');
-			body.rows = r;
-		} else {
-			body.rowKeys = (b.rowKeys ?? '').split(/[\s,]+/).filter((k) => k.length > 0);
-			if (body.rowKeys.length === 0)
-				throw bad('at least one row key is required');
-		}
-		v.reqbody = body;
-		v.result = await req.qt.batch(t, body);
-		if (b.action === 'insert') {
-			v.inserted = (v.result.rowKeys ?? []).map((k) => ({ key: k, href: rowurl(t, k) }));
-			return res.render('table', v);
-		}
-		if (b.action !== 'get')
-			return back(res, tableurl(t, 'batch'), undefined, `Batch ${b.action} applied`);
-		const rows = Object.entries(v.result.rows ?? {}).map(([rowKey, columns]) => ({ rowKey, columns }));
-		v.grid = grid(t, rows);
-	} catch (err) {
-		v.err = fmterr(err);
-	}
-	res.render('table', v);
 }
 
 async function drop(req, res) {
@@ -372,8 +407,20 @@ async function drop(req, res) {
 	if (req.body.confirm !== t)
 		return back(res, tableurl(t, 'details'), bad('confirmation does not match the table name'));
 	try {
-		await req.qt.drop(t);
+		await req.qt.batch({ ops: [{ op: 'delete', table: t }] });
 		back(res, '/', undefined, `Dropped table ${t}`);
+	} catch (err) {
+		back(res, tableurl(t, 'details'), err);
+	}
+}
+
+// dropcol deletes one column from every row of the table.
+async function dropcol(req, res) {
+	const t = req.params.table;
+	try {
+		const c = need(req.body.column, 'column');
+		await req.qt.batch({ ops: [{ op: 'delete', table: t, column: c }] });
+		back(res, tableurl(t, 'details'), undefined, `Deleted column ${c} from every row`);
 	} catch (err) {
 		back(res, tableurl(t, 'details'), err);
 	}
@@ -381,22 +428,21 @@ async function drop(req, res) {
 
 async function row(req, res) {
 	const { table: t, row: k } = req.params;
-	const only = names(req.query.cols);
-	const r = await req.qt.getrow(t, k, only);
-	const list = Object.entries(r.columns ?? {})
+	const r = await req.qt.get({ table: t, row: k });
+	const list = Object.entries(r.row)
 		.sort(([a], [b]) => a.localeCompare(b))
-		.map(([name, v]) => ({ name, v: show(v), type: typeof_(v), href: rowurl(t, k) + '/columns/' + encodeURIComponent(name) }));
-	res.render('row', {
-		title: `${t} / ${k}`, table: t, key: k, list, cols: blanks(1), setcols: blanks(1),
-		only: only.length > 0 ? only.join(', ') : undefined,
-	});
+		.map(([name, v]) => ({ name, v: show(v), type: typeof_(v), href: cellurl(t, k, name) }));
+	res.render('row', { title: `${t} / ${k}`, table: t, key: k, list, cols: blanks(1), setcols: blanks(1) });
 }
 
 async function setrow(req, res) {
 	const { table: t, row: k } = req.params;
 	try {
-		await req.qt.setrow(t, k, cols(req.body.cols));
-		back(res, rowurl(t, k), undefined, 'Row updated');
+		const ops = sets(t, k, req.body.cols);
+		if (ops.length === 0)
+			throw bad('at least one column is required');
+		await req.qt.batch({ ops });
+		back(res, rowurl(t, k), undefined, `Set ${ops.map((o) => o.column).join(', ')}`);
 	} catch (err) {
 		back(res, rowurl(t, k), err);
 	}
@@ -405,97 +451,87 @@ async function setrow(req, res) {
 async function delrow(req, res) {
 	const { table: t, row: k } = req.params;
 	try {
-		await req.qt.delrow(t, k);
-		back(res, tableurl(t), undefined, `Deleted row ${k}`);
+		await req.qt.batch({ ops: [{ op: 'delete', table: t, row: k }] });
+		back(res, tableurl(t, 'preview'), undefined, `Deleted row ${k}`);
 	} catch (err) {
 		back(res, rowurl(t, k), err);
 	}
 }
 
-async function atomic(req, res) {
+async function incr(req, res) {
+	const { table: t, row: k } = req.params;
+	const url = req.body.back === 'cell' ? cellurl(t, k, req.body.column) : rowurl(t, k);
+	try {
+		const c = need(req.body.column, 'column');
+		const r = await req.qt.incr({ table: t, row: k, column: c, delta: parse('number', req.body.delta) });
+		back(res, url, undefined, `${c} → ${show(r.value)}`);
+	} catch (err) {
+		back(res, url, err);
+	}
+}
+
+// cond applies writes to the row only if a condition holds, in one batch.
+async function cond(req, res) {
 	const { table: t, row: k } = req.params;
 	const b = req.body;
 	try {
-		if (!atomics.includes(b.op))
-			throw bad(`unknown operation: ${b.op}`);
-		if (b.column === undefined || b.column === '')
-			throw bad('column is required');
-		const body = { column: b.column };
-		if (b.op === 'incr')
-			body.delta = parse('number', b.value);
+		const ops = [];
+		if (b.column !== undefined && b.column.trim() !== '')
+			ops.push({ op: 'if', table: t, row: k, ...pred(b.column.trim(), b.cmp, b.type, b.value) });
+		ops.push(...sets(t, k, b.cols));
+		if (b.delrow === 'on')
+			ops.push({ op: 'delete', table: t, row: k });
 		else
-			body.value = b.value ?? '';
-		const r = await req.qt.atomic(t, k, b.op, body);
-		back(res, rowurl(t, k), undefined, `${b.op} ${b.column} → ${show(r.value)}`);
+			for (const c of names(b.delcols))
+				ops.push({ op: 'delete', table: t, row: k, column: c });
+		if (ops.every((o) => o.op === 'if'))
+			throw bad('nothing to write: give columns to set or delete');
+		await req.qt.batch({ ops });
+		if (b.delrow === 'on')
+			return back(res, tableurl(t, 'preview'), undefined, `Deleted row ${k}`);
+		back(res, rowurl(t, k), undefined, `Applied ${ops.length} operations`);
 	} catch (err) {
-		back(res, rowurl(t, k), err);
-	}
-}
-
-async function cas(req, res) {
-	const { table: t, row: k } = req.params;
-	const b = req.body;
-	try {
-		const body = { setCols: cols(b.cols) };
-		if (b.column !== undefined && b.column !== '')
-			body.condition = pred(b.column, b.op, b.type, b.value);
-		await req.qt.cas(t, k, body);
-		back(res, rowurl(t, k), undefined, 'Check-and-set applied');
-	} catch (err) {
-		back(res, rowurl(t, k), err);
-	}
-}
-
-async function cad(req, res) {
-	const { table: t, row: k } = req.params;
-	const b = req.body;
-	try {
-		const body = {};
-		if (b.column !== undefined && b.column !== '')
-			body.condition = pred(b.column, b.op, b.type, b.value);
-		const del = names(b.delCols);
-		if (del.length > 0)
-			body.delCols = del;
-		await req.qt.cad(t, k, body);
-		if (del.length === 0)
-			return back(res, tableurl(t), undefined, `Check-and-delete removed row ${k}`);
-		back(res, rowurl(t, k), undefined, `Check-and-delete removed ${del.join(', ')}`);
-	} catch (err) {
+		if (err.status === 409)
+			err.message = 'condition failed; nothing was written';
 		back(res, rowurl(t, k), err);
 	}
 }
 
 async function cell(req, res) {
 	const { table: t, row: k, column: c } = req.params;
-	const r = await req.qt.getcell(t, k, c);
-	res.render('cell', { title: `${t} / ${k} / ${c}`, table: t, key: k, column: c, v: show(r.value), type: typeof_(r.value), rowhref: rowurl(t, k) });
+	const r = await req.qt.get({ table: t, row: k, column: c });
+	res.render('cell', { title: `${t} / ${k} / ${c}`, table: t, key: k, column: c, v: show(r.value), type: typeof_(r.value), rowhref: rowurl(t, k), href: cellurl(t, k, c) });
 }
 
 async function setcell(req, res) {
-	const { table: t, row: k } = req.params;
-	const c = req.params.column ?? req.body.column ?? '';
-	const url = req.params.column !== undefined ? rowurl(t, k) + '/columns/' + encodeURIComponent(c) : rowurl(t, k);
+	const { table: t, row: k, column: c } = req.params;
 	try {
-		if (c === '')
-			throw bad('column is required');
-		await req.qt.setcell(t, k, c, parse(req.body.type, req.body.value));
-		back(res, url, undefined, `Set ${c}`);
+		await req.qt.batch({ ops: [{ op: 'set', table: t, row: k, column: c, value: parse(req.body.type, req.body.value) }] });
+		back(res, cellurl(t, k, c), undefined, `Set ${c}`);
 	} catch (err) {
-		back(res, url, err);
+		back(res, cellurl(t, k, c), err);
 	}
 }
 
 async function delcell(req, res) {
 	const { table: t, row: k, column: c } = req.params;
 	try {
-		await req.qt.delcell(t, k, c);
+		await req.qt.batch({ ops: [{ op: 'delete', table: t, row: k, column: c }] });
+	} catch (err) {
+		return back(res, rowurl(t, k), err);
+	}
+	// Deleting the last cell deletes the row, leaving no row page to return to.
+	try {
+		await req.qt.get({ table: t, row: k });
 		back(res, rowurl(t, k), undefined, `Deleted column ${c}`);
 	} catch (err) {
-		back(res, rowurl(t, k), err);
+		if (err.status !== 404)
+			return back(res, rowurl(t, k), err);
+		back(res, tableurl(t, 'preview'), undefined, `Deleted column ${c}, the last of row ${k}`);
 	}
 }
 
 module.exports = {
-	fmterr, home, newtable, create, table, goto, query, qdelete, insert, batch, drop,
-	row, setrow, delrow, atomic, cas, cad, cell, setcell, delcell,
+	fmterr, editor, exec, home, newtable, create, table, query, goto, insert, drop, dropcol,
+	row, setrow, delrow, incr, cond, cell, setcell, delcell,
 };

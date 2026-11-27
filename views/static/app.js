@@ -12,19 +12,7 @@ document.addEventListener('click', (ev) => {
 	f.focus();
 });
 
-// The batch form shows only the input the chosen action reads.
-function batchfields(sel) {
-	for (const d of sel.form.querySelectorAll('[data-action]'))
-		d.hidden = !d.dataset.action.split(' ').includes(sel.value);
-}
-document.addEventListener('change', (ev) => {
-	if (ev.target.matches('select[data-batch]'))
-		batchfields(ev.target);
-});
-for (const sel of document.querySelectorAll('select[data-batch]'))
-	batchfields(sel);
-
-// "+ Column" and "+ Filter" clone the last row and renumbers its field names.
+// "+ Column" and "+ Condition" clone the last row and renumber its field names.
 document.addEventListener('click', (ev) => {
 	const btn = ev.target.closest('button[data-add]');
 	if (btn === null)
@@ -44,7 +32,63 @@ document.addEventListener('click', (ev) => {
 	row.querySelector('input').focus();
 });
 
-// On narrow screens the sidebar stacks above the page, so start it collapsed.
-if (matchMedia('(max-width: 900px)').matches)
-	for (const d of document.querySelectorAll('aside[data-sidebar] details'))
-		d.open = false;
+// Destructive forms ask first.
+document.addEventListener('submit', (ev) => {
+	const msg = ev.target.dataset.confirm;
+	if (msg !== undefined && !confirm(msg))
+		ev.preventDefault();
+});
+
+// The explorer search hides tables whose name does not match.
+document.addEventListener('input', (ev) => {
+	if (!ev.target.matches('input[data-filter]'))
+		return;
+	const q = ev.target.value.trim().toLowerCase();
+	for (const li of document.getElementById(ev.target.dataset.filter).children)
+		li.hidden = q !== '' && !li.textContent.toLowerCase().includes(q);
+});
+
+// The editor keeps line numbers beside the text, runs on Ctrl+Enter,
+// pretty prints on Format, and swaps in a template when the operation
+// changes while the text is still the untouched template.
+const ed = document.querySelector('form[data-editor]');
+if (ed !== null) {
+	const text = ed.querySelector('textarea');
+	const gutter = ed.querySelector('.cc-sql-gutter');
+	const lines = () => {
+		const n = text.value.split('\n').length;
+		gutter.textContent = Array.from({ length: n }, (_, i) => i + 1).join('\n');
+		text.rows = Math.max(n, 6);
+	};
+	lines();
+	text.addEventListener('input', lines);
+	text.addEventListener('keydown', (ev) => {
+		if (ev.key === 'Enter' && (ev.ctrlKey || ev.metaKey)) {
+			ev.preventDefault();
+			ed.requestSubmit();
+		}
+		if (ev.key === 'Tab' && !ev.shiftKey) {
+			ev.preventDefault();
+			text.setRangeText('  ', text.selectionStart, text.selectionEnd, 'end');
+			lines();
+		}
+	});
+	ed.querySelector('[data-format]').addEventListener('click', () => {
+		try {
+			text.value = JSON.stringify(JSON.parse(text.value), null, 2);
+			text.removeAttribute('aria-invalid');
+			lines();
+		} catch (err) {
+			text.setAttribute('aria-invalid', 'true');
+			CloudConsole.toast(err.message);
+		}
+	});
+	ed.querySelector('select[data-op]').addEventListener('change', (ev) => {
+		if (ed.dataset.fresh === undefined || text.value !== text.defaultValue)
+			return;
+		const q = new URLSearchParams({ op: ev.target.value });
+		if (ed.dataset.table !== undefined)
+			q.set('table', ed.dataset.table);
+		location.href = '/editor?' + q;
+	});
+}
