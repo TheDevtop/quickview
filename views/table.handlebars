@@ -22,6 +22,7 @@
 	<a role="tab" href="/tables/{{u table}}?tab=keys" aria-selected="{{eq tab 'keys'}}">Row keys</a>
 	<a role="tab" href="/tables/{{u table}}?tab=query" aria-selected="{{eq tab 'query'}}">Query</a>
 	<a role="tab" href="/tables/{{u table}}?tab=insert" aria-selected="{{eq tab 'insert'}}">Insert row</a>
+	<a role="tab" href="/tables/{{u table}}?tab=delete" aria-selected="{{eq tab 'delete'}}">Delete row</a>
 </nav>
 {{/section}}
 
@@ -37,14 +38,6 @@
 		<dt>First row key</dt><dd>{{#if firstkey}}<a href="/tables/{{u table}}/rows/{{u firstkey}}"><code>{{firstkey}}</code></a>{{else}}<span class="missing">none</span>{{/if}}</dd>
 		<dt>Last row key</dt><dd>{{#if lastkey}}<a href="/tables/{{u table}}/rows/{{u lastkey}}"><code>{{lastkey}}</code></a>{{else}}<span class="missing">none</span>{{/if}}</dd>
 	</dl>
-</article>
-<article>
-	<header><h3>Delete column</h3><span data-pill data-badge="danger">Cannot be undone</span></header>
-	<p>Deletes one column from every row of <strong>{{table}}</strong>. Rows left without cells are deleted too.</p>
-	<form method="post" action="/tables/{{u table}}/dropcol" data-confirm="Delete this column from every row of {{table}}?">
-		<input name="column" placeholder="column" aria-label="Column" list="colnames" required>
-		<footer><button type="submit" class="danger"><span class="material-icons-outlined">delete_sweep</span>Delete column</button></footer>
-	</form>
 </article>
 <article>
 	<header><h3>Delete table</h3><span data-pill data-badge="danger">Cannot be undone</span></header>
@@ -115,6 +108,36 @@
 		<h5 class="gap">Columns</h5>
 		{{> cols list=cols n="cols"}}
 		<footer><button type="submit"><span class="material-icons">add</span>Insert</button></footer>
+	</form>
+</article>
+<article>
+	<header><h3>Batch insert</h3><small>One atomic batch; values keep their JSON types</small></header>
+	<form method="post" action="/tables/{{u table}}/batch">
+		<label for="rows">Rows — JSON object of row key to columns</label>
+		<textarea id="rows" name="rows" rows="6" required placeholder='{
+  "ann": { "age": 32, "name": "Ann" },
+  "bob": { "age": 41 }
+}'></textarea>
+		<footer><button type="submit"><span class="material-icons">playlist_add</span>Insert rows</button></footer>
+	</form>
+</article>
+{{/if}}
+
+{{#if (eq tab 'delete')}}
+<article>
+	<header><h3>Delete row</h3><span data-pill data-badge="danger">Cannot be undone</span></header>
+	<form method="post" action="/tables/{{u table}}/delete" data-confirm="Delete this row from {{table}}?">
+		<label for="delkey">Row key</label>
+		<input id="delkey" name="keys" required placeholder="ann" pattern="\S+" title="No whitespace">
+		<footer><button type="submit" class="danger"><span class="material-icons-outlined">delete</span>Delete</button></footer>
+	</form>
+</article>
+<article>
+	<header><h3>Batch delete</h3><span data-pill data-badge="danger">Cannot be undone</span></header>
+	<form method="post" action="/tables/{{u table}}/delete" data-confirm="Delete these rows from {{table}}?">
+		<label for="delkeys">Row keys — whitespace or comma separated</label>
+		<textarea id="delkeys" name="keys" rows="4" required placeholder="ann bob carol"></textarea>
+		<footer><button type="submit" class="danger"><span class="material-icons-outlined">delete_sweep</span>Delete rows</button></footer>
 	</form>
 </article>
 {{/if}}

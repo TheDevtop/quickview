@@ -211,7 +211,7 @@ function template(op, t) {
 }
 
 function editorview(op, text, r, err) {
-	return { title: 'Untitled query', icon: 'search', op, text, lines: text.split('\n').length, r, err };
+	return { title: 'Query', icon: 'search', op, text, lines: text.split('\n').length, r, err };
 }
 
 async function editor(req, res) {
@@ -319,7 +319,7 @@ async function table(req, res) {
 		v.keys = (await req.qt.scan({ table: t })).names;
 		break;
 	}
-	if (['details', 'query', 'insert'].includes(v.tab))
+	if (['query', 'insert'].includes(v.tab))
 		v.colnames = (await req.qt.scan({ table: t, columns: true })).names.sort();
 	res.render('table', v);
 }
@@ -414,15 +414,50 @@ async function drop(req, res) {
 	}
 }
 
-// dropcol deletes one column from every row of the table.
-async function dropcol(req, res) {
+// batchinsert writes a JSON object of rows {key: {column: value}} in one batch.
+async function batchinsert(req, res) {
 	const t = req.params.table;
 	try {
-		const c = need(req.body.column, 'column');
-		await req.qt.batch({ ops: [{ op: 'delete', table: t, column: c }] });
-		back(res, tableurl(t, 'details'), undefined, `Deleted column ${c} from every row`);
+		let rows;
+		try {
+			rows = JSON.parse(req.body.rows ?? '');
+		} catch (err) {
+			throw bad(`rows JSON: ${err.message}`);
+		}
+		if (rows === null || typeof rows !== 'object' || Array.isArray(rows))
+			throw bad('rows must be a JSON object of row key to columns');
+		const ops = [];
+		for (const [k, cols] of Object.entries(rows)) {
+			if (k.trim() === '')
+				throw bad('row keys must not be empty');
+			if (cols === null || typeof cols !== 'object' || Array.isArray(cols) || Object.keys(cols).length === 0)
+				throw bad(`row ${k}: columns must be a non-empty JSON object`);
+			for (const [c, v] of Object.entries(cols)) {
+				if (!['string', 'number', 'boolean'].includes(typeof v))
+					throw bad(`row ${k}, column ${c}: value must be a string, number or boolean`);
+				ops.push({ op: 'set', table: t, row: k, column: c, value: v });
+			}
+		}
+		if (ops.length === 0)
+			throw bad('at least one row is required');
+		await req.qt.batch({ ops });
+		back(res, tableurl(t, 'insert'), undefined, `Wrote ${Object.keys(rows).length} rows`);
 	} catch (err) {
-		back(res, tableurl(t, 'details'), err);
+		back(res, tableurl(t, 'insert'), err);
+	}
+}
+
+// delrows deletes the rows named by keys, separated by whitespace or commas, in one batch.
+async function delrows(req, res) {
+	const t = req.params.table;
+	try {
+		const keys = (req.body.keys ?? '').split(/[\s,]+/).filter((k) => k.length > 0);
+		if (keys.length === 0)
+			throw bad('at least one row key is required');
+		await req.qt.batch({ ops: keys.map((k) => ({ op: 'delete', table: t, row: k })) });
+		back(res, tableurl(t, 'delete'), undefined, keys.length === 1 ? `Deleted row ${keys[0]}` : `Deleted ${keys.length} rows`);
+	} catch (err) {
+		back(res, tableurl(t, 'delete'), err);
 	}
 }
 
@@ -532,6 +567,6 @@ async function delcell(req, res) {
 }
 
 module.exports = {
-	fmterr, editor, exec, home, newtable, create, table, query, goto, insert, drop, dropcol,
+	fmterr, editor, exec, home, newtable, create, table, query, goto, insert, batchinsert, delrows, drop,
 	row, setrow, delrow, incr, cond, cell, setcell, delcell,
 };

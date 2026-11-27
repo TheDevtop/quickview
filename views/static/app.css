@@ -22,12 +22,10 @@ ul.tree .tree-leaf { justify-content: flex-start; padding-left: 16px; text-decor
 aside[data-sidebar] .empty { display: block; padding: 5px 16px; color: var(--cc-text-muted); }
 .trunc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
-/* Workspace tab strip with "Compose new query" at its end. */
+/* Workspace tab strip. */
 [data-workspace-tabbar] { flex-shrink: 0; }
 [data-workspace-tabbar] .ws-tab { text-decoration: none; text-transform: none; font-size: 12.5px; }
 [data-workspace-tabbar] .ws-tab .material-icons-outlined { font-size: 17px; }
-[data-workspace-tabbar] .compose { display: inline-flex; align-items: center; gap: 4px; padding: 0 14px; font-size: 12.5px; font-weight: 500; color: var(--cc-link); text-decoration: none; white-space: nowrap; }
-[data-workspace-tabbar] .compose:hover { background: rgba(0, 0, 0, 0.03); }
 
 main[data-workspace] > [role="tablist"] { flex-shrink: 0; }
 .page { padding: 16px 24px; }
