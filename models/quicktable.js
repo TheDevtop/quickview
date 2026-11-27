@@ -1,8 +1,19 @@
 // Client for the Quicktable REST API (docs/rest.md).
 
-// This link to the Quicktable docs need to be kept up-to-date
+// This link to the Quicktable docs needs to be kept up-to-date.
 const docs = `https://github.com/TheDevtop/quicktable/blob/v1.0.0/docs/rest.md`;
 const ops = ['scan', 'get', 'values', 'query', 'batch', 'incr'];
+const cmps = ['=', '!=', '<', '<=', '>', '>=', 'prefix', 'contains', 'exists', 'missing'];
+const unary = ['exists', 'missing'];
+const types = ['string', 'number', 'boolean'];
+const aggs = ['count', 'sum', 'avg', 'min', 'max'];
+
+// httperr makes an error that carries the HTTP status to answer with.
+function httperr(status, msg) {
+	const err = new Error(msg);
+	err.status = status;
+	return err;
+}
 
 async function call(base, token, method, path, body) {
 	const opts = { method, headers: {} };
@@ -17,9 +28,7 @@ async function call(base, token, method, path, body) {
 	try {
 		res = await fetch(base + path, opts);
 	} catch (err) {
-		const x = new Error(`cannot reach ${base}: ${err.cause?.code ?? err.message}`);
-		x.status = 502;
-		throw x;
+		throw httperr(502, `cannot reach ${base}: ${err.cause?.code ?? err.message}`);
 	}
 
 	const text = await res.text();
@@ -31,11 +40,8 @@ async function call(base, token, method, path, body) {
 			data = { error: text };
 		}
 	}
-	if (!res.ok) {
-		const x = new Error(data.error ?? res.statusText);
-		x.status = res.status;
-		throw x;
-	}
+	if (!res.ok)
+		throw httperr(res.status, data.error ?? res.statusText);
 	return data;
 }
 
@@ -49,4 +55,4 @@ function client(base, token) {
 	return c;
 }
 
-module.exports = { docs, ops, client };
+module.exports = { docs, ops, cmps, unary, types, aggs, httperr, client };

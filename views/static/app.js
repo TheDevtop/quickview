@@ -48,6 +48,19 @@ document.addEventListener('input', (ev) => {
 		li.hidden = q !== '' && !li.textContent.toLowerCase().includes(q);
 });
 
+// "/" focuses the explorer search; cloud-console.js only looks in the topbar.
+document.addEventListener('keydown', (ev) => {
+	if (ev.key !== '/' || ev.ctrlKey || ev.metaKey || ev.altKey)
+		return;
+	if (ev.target.matches('input, textarea, select'))
+		return;
+	const search = document.querySelector('input[data-filter]');
+	if (search === null)
+		return;
+	ev.preventDefault();
+	search.focus();
+});
+
 // The editor keeps line numbers beside the text, runs on Ctrl+Enter,
 // pretty prints on Format, and swaps in a template when the operation
 // changes while the text is still the untouched template.

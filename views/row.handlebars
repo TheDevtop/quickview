@@ -4,7 +4,7 @@
 	<li><a href="/tables/{{u table}}" class="breadcrumb-stack"><small>Table</small>{{table}}</a></li>
 	<li><span class="breadcrumb-stack"><small>Row</small>{{key}}</span></li>
 </ul></nav>
-<form method="post" action="/tables/{{u table}}/rows/{{u key}}/delete" data-confirm="Delete row {{key}}?">
+<form method="post" action="{{href}}/delete" data-confirm="Delete row {{key}}?">
 	<button type="submit" class="danger"><span class="material-icons-outlined">delete</span>Delete row</button>
 </form>
 {{/section}}
@@ -34,7 +34,7 @@
 <div class="cc-grid gap">
 	<article>
 		<header><h3>Set columns</h3><small>Unmentioned columns are kept</small></header>
-		<form method="post" action="/tables/{{u table}}/rows/{{u key}}">
+		<form method="post" action="{{href}}">
 			{{> cols list=cols n="cols"}}
 			<footer><button type="submit"><span class="material-icons">save</span>Write</button></footer>
 		</form>
@@ -42,7 +42,7 @@
 
 	<article>
 		<header><h3>Increment</h3><small>A missing cell counts as 0</small></header>
-		<form method="post" action="/tables/{{u table}}/rows/{{u key}}/incr">
+		<form method="post" action="{{href}}/incr">
 			<div class="cell-row pair">
 				<input name="column" placeholder="column" aria-label="Column" list="colnames" required>
 				<input name="delta" placeholder="delta" aria-label="Delta" value="1" inputmode="decimal" required>
@@ -54,7 +54,7 @@
 
 <article>
 	<header><h3>Conditional write</h3><small>One batch: nothing is written unless the condition holds</small></header>
-	<form method="post" action="/tables/{{u table}}/rows/{{u key}}/cond">
+	<form method="post" action="{{href}}/cond">
 		<h5>If</h5>
 		<div class="pred-row">
 			<input name="column" placeholder="column" aria-label="Condition column" list="colnames" required>

@@ -4,10 +4,6 @@ const { engine } = require('express-handlebars');
 const qt = require('./models/quicktable');
 const tc = require('./controllers/tables');
 
-const cmps = ['=', '!=', '<', '<=', '>', '>=', 'prefix', 'contains', 'exists', 'missing'];
-const types = ['string', 'number', 'boolean'];
-const aggs = ['count', 'sum', 'avg', 'min', 'max'];
-
 let addr = process.env.QUICKTABLE_URL ?? 'http://localhost:16000';
 let port = Number(process.env.PORT ?? 3000);
 
@@ -97,7 +93,9 @@ app.post('/connect', async (req, res) => {
 // signout forgets the token and sends the browser back to /connect.
 function signout(res, err) {
 	res.clearCookie('qtt');
-	res.redirect('/connect' + (err !== undefined ? '?err=' + encodeURIComponent(tc.fmterr(err)) : ''));
+	if (err === undefined)
+		return res.redirect('/connect');
+	tc.back(res, '/connect', err);
 }
 
 app.post('/disconnect', (req, res) => {
@@ -112,7 +110,10 @@ app.use(async (req, res, next) => {
 	if (base === undefined || token === undefined)
 		return res.redirect('/connect');
 	req.qt = qt.client(base, token);
-	Object.assign(res.locals, { base: req.qt.base, docs: qt.docs, ops: qt.ops, cmps, types, aggs, msg: req.query.msg, err: req.query.err });
+	Object.assign(res.locals, {
+		base: req.qt.base, docs: qt.docs, ops: qt.ops, cmps: qt.cmps, types: qt.types, aggs: qt.aggs,
+		msg: req.query.msg, err: req.query.err,
+	});
 	try {
 		res.locals.tables = (await req.qt.scan()).names;
 	} catch (err) {
@@ -150,12 +151,11 @@ function fail(req, res, status, msg) {
 	const reason = http.STATUS_CODES[status] ?? 'Error';
 	let table;
 	const m = /^\/tables\/([^/]+)/.exec(req.path);
-	if (m !== null) {
-		try {
+	try {
+		if (m !== null)
 			table = decodeURIComponent(m[1]);
-		} catch {
-			table = undefined;
-		}
+	} catch {
+		// A malformed escape names no table to go back to.
 	}
 	res.status(status).render('error', { title: `${status} ${reason}`, icon: 'error_outline', status, reason, text: msg, table, err: undefined, msg: undefined });
 }
