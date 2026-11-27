@@ -1,6 +1,5 @@
 /* Page layout for Quickview; components come from cloud-console.css. */
 
-header[data-topbar] a.brand { color: #ffffff; text-decoration: none; }
 header[data-topbar] .addr { display: inline-flex; align-items: center; gap: 6px; color: rgba(255, 255, 255, 0.85); font-family: var(--cc-font-mono); font-size: 12px; }
 header[data-topbar] form { margin: 0; }
 header[data-subheader] h1 { margin: 0; font-size: 18px; font-weight: 400; }
@@ -24,7 +23,8 @@ aside[data-sidebar] .empty { display: block; padding: 5px 16px; color: var(--cc-
 
 /* Workspace tab strip. */
 [data-workspace-tabbar] { flex-shrink: 0; }
-[data-workspace-tabbar] .ws-tab { text-decoration: none; text-transform: none; font-size: 12.5px; }
+[data-workspace-tabbar] .tab-scroll-list { gap: 0; padding: 0; border-bottom: none; background: transparent; }
+[data-workspace-tabbar] .ws-tab > [role="tab"] { text-transform: none; font-size: 12.5px; }
 [data-workspace-tabbar] .ws-tab .material-icons-outlined { font-size: 17px; }
 
 main[data-workspace] > [role="tablist"] { flex-shrink: 0; }
@@ -46,7 +46,6 @@ dl.info dt, dl.exec dt { color: var(--cc-text-secondary); font-weight: 400; }
 dl.info dd, dl.exec dd { margin: 0; }
 dl.exec { margin-bottom: 12px; }
 
-article form footer { display: flex; justify-content: flex-end; gap: 8px; margin: 14px -16px -16px -16px; padding: 10px 16px; border-top: 1px solid var(--cc-border); background: var(--cc-bg-subtle); }
 article > header small { margin-left: auto; }
 td form { display: inline; }
 

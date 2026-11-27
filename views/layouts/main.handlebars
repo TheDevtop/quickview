@@ -54,8 +54,8 @@
 	<main data-workspace>
 		{{#if base}}
 		<div data-workspace-tabbar>
-			<div class="tab-scroll-list">
-				<a class="ws-tab" aria-selected="true" href="{{#if table}}/tables/{{u table}}{{else}}#{{/if}}"><span class="material-icons-outlined">{{#if icon}}{{icon}}{{else}}table_chart{{/if}}</span><span class="trunc">{{title}}</span></a>
+			<div class="tab-scroll-list" role="tablist" aria-label="Open pages">
+				<div class="ws-tab" role="none"><a role="tab" aria-selected="true" href="{{#if table}}/tables/{{u table}}{{else}}#{{/if}}"><span class="material-icons-outlined">{{#if icon}}{{icon}}{{else}}table_chart{{/if}}</span><span class="trunc">{{title}}</span></a></div>
 			</div>
 		</div>
 		{{/if}}
