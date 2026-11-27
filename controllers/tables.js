@@ -447,13 +447,24 @@ async function batchinsert(req, res) {
 	}
 }
 
-// delrows deletes the rows named by keys, separated by whitespace or commas, in one batch.
+// delrows deletes one row by key, or a JSON array of keys, in one batch.
 async function delrows(req, res) {
 	const t = req.params.table;
 	try {
-		const keys = (req.body.keys ?? '').split(/[\s,]+/).filter((k) => k.length > 0);
-		if (keys.length === 0)
-			throw bad('at least one row key is required');
+		let keys;
+		if (req.body.keys !== undefined) {
+			try {
+				keys = JSON.parse(req.body.keys);
+			} catch (err) {
+				throw bad(`keys JSON: ${err.message}`);
+			}
+			if (!Array.isArray(keys) || keys.length === 0)
+				throw bad('keys must be a non-empty JSON array');
+			if (keys.some((k) => typeof k !== 'string' || k.trim() === ''))
+				throw bad('every key must be a non-empty string');
+		} else {
+			keys = [need(req.body.key, 'row key')];
+		}
 		await req.qt.batch({ ops: keys.map((k) => ({ op: 'delete', table: t, row: k })) });
 		back(res, tableurl(t, 'delete'), undefined, keys.length === 1 ? `Deleted row ${keys[0]}` : `Deleted ${keys.length} rows`);
 	} catch (err) {

@@ -128,15 +128,15 @@
 	<header><h3>Delete row</h3><span data-pill data-badge="danger">Cannot be undone</span></header>
 	<form method="post" action="/tables/{{u table}}/delete" data-confirm="Delete this row from {{table}}?">
 		<label for="delkey">Row key</label>
-		<input id="delkey" name="keys" required placeholder="ann" pattern="\S+" title="No whitespace">
+		<input id="delkey" name="key" required placeholder="ann" pattern="\S+" title="No whitespace">
 		<footer><button type="submit" class="danger"><span class="material-icons-outlined">delete</span>Delete</button></footer>
 	</form>
 </article>
 <article>
 	<header><h3>Batch delete</h3><span data-pill data-badge="danger">Cannot be undone</span></header>
 	<form method="post" action="/tables/{{u table}}/delete" data-confirm="Delete these rows from {{table}}?">
-		<label for="delkeys">Row keys — whitespace or comma separated</label>
-		<textarea id="delkeys" name="keys" rows="4" required placeholder="ann bob carol"></textarea>
+		<label for="delkeys">Row keys — JSON array of strings</label>
+		<textarea id="delkeys" name="keys" rows="4" required placeholder='["ann", "bob", "carol"]'></textarea>
 		<footer><button type="submit" class="danger"><span class="material-icons-outlined">delete_sweep</span>Delete rows</button></footer>
 	</form>
 </article>
