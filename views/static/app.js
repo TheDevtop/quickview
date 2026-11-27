@@ -92,8 +92,3 @@ if (ed !== null) {
 		location.href = '/editor?' + q;
 	});
 }
-
-// On narrow screens the explorer stacks above the page, so start it collapsed.
-if (matchMedia('(max-width: 900px)').matches)
-	for (const d of document.querySelectorAll('aside[data-sidebar] details'))
-		d.open = false;

@@ -17,9 +17,8 @@
 
 {{#section 'tabs'}}
 <nav role="tablist" aria-label="Table views">
-	<a role="tab" href="/tables/{{u table}}?tab=schema" aria-selected="{{eq tab 'schema'}}">Schema</a>
-	<a role="tab" href="/tables/{{u table}}?tab=details" aria-selected="{{eq tab 'details'}}">Details</a>
 	<a role="tab" href="/tables/{{u table}}?tab=preview" aria-selected="{{eq tab 'preview'}}">Preview</a>
+	<a role="tab" href="/tables/{{u table}}?tab=details" aria-selected="{{eq tab 'details'}}">Details</a>
 	<a role="tab" href="/tables/{{u table}}?tab=keys" aria-selected="{{eq tab 'keys'}}">Row keys</a>
 	<a role="tab" href="/tables/{{u table}}?tab=query" aria-selected="{{eq tab 'query'}}">Query</a>
 	<a role="tab" href="/tables/{{u table}}?tab=insert" aria-selected="{{eq tab 'insert'}}">Insert row</a>
@@ -27,32 +26,6 @@
 {{/section}}
 
 {{#if colnames}}<datalist id="colnames">{{#each colnames}}<option value="{{this}}">{{/each}}</datalist>{{/if}}
-
-{{#if (eq tab 'schema')}}
-<div class="panel">
-<div class="table-wrap">
-<table data-grid="clean">
-	<thead><tr><th>Field name</th><th>Type</th><th></th></tr></thead>
-	<tbody>
-		{{#each schema}}
-		<tr>
-			<td><code>{{name}}</code></td>
-			<td>{{#each types}}<span data-pill>{{this}}</span> {{else}}<span class="missing">not in sample</span>{{/each}}</td>
-			<td class="num">
-				<form method="post" action="/tables/{{u ../table}}/columns/{{u name}}/delete" data-confirm="Delete column {{name}} from every row of {{../table}}?">
-					<button type="submit" class="icon" aria-label="Delete {{name}}" data-tooltip="Delete from every row"><span class="material-icons-outlined">delete</span></button>
-				</form>
-			</td>
-		</tr>
-		{{else}}
-		<tr><td colspan="3" class="missing">No columns</td></tr>
-		{{/each}}
-	</tbody>
-</table>
-</div>
-</div>
-<small class="hint">Rows need not share columns. Types are those seen in the first {{sample}} rows.</small>
-{{/if}}
 
 {{#if (eq tab 'details')}}
 <article>
@@ -64,6 +37,14 @@
 		<dt>First row key</dt><dd>{{#if firstkey}}<a href="/tables/{{u table}}/rows/{{u firstkey}}"><code>{{firstkey}}</code></a>{{else}}<span class="missing">none</span>{{/if}}</dd>
 		<dt>Last row key</dt><dd>{{#if lastkey}}<a href="/tables/{{u table}}/rows/{{u lastkey}}"><code>{{lastkey}}</code></a>{{else}}<span class="missing">none</span>{{/if}}</dd>
 	</dl>
+</article>
+<article>
+	<header><h3>Delete column</h3><span data-pill data-badge="danger">Cannot be undone</span></header>
+	<p>Deletes one column from every row of <strong>{{table}}</strong>. Rows left without cells are deleted too.</p>
+	<form method="post" action="/tables/{{u table}}/dropcol" data-confirm="Delete this column from every row of {{table}}?">
+		<input name="column" placeholder="column" aria-label="Column" list="colnames" required>
+		<footer><button type="submit" class="danger"><span class="material-icons-outlined">delete_sweep</span>Delete column</button></footer>
+	</form>
 </article>
 <article>
 	<header><h3>Delete table</h3><span data-pill data-badge="danger">Cannot be undone</span></header>

@@ -42,16 +42,13 @@
 			<span class="material-icons">search</span>
 			<input type="search" placeholder="Search for tables" aria-label="Search for tables" data-filter="tables">
 		</div>
-		<details data-tree open>
-			<summary><span class="material-icons-outlined">dns</span><span class="trunc">{{base}}</span></summary>
-			<ul class="tree" id="tables">
-				{{#each tables}}
-				<li><a class="tree-leaf" href="/tables/{{u this}}"{{#if (eq this ../table)}} aria-selected="true"{{/if}}><span class="material-icons-outlined">table_chart</span><span class="trunc">{{this}}</span></a></li>
-				{{else}}
-				<li><small class="empty">No tables</small></li>
-				{{/each}}
-			</ul>
-		</details>
+		<ul class="tree" id="tables">
+			{{#each tables}}
+			<li><a class="tree-leaf" href="/tables/{{u this}}"{{#if (eq this ../table)}} aria-selected="true"{{/if}}><span class="material-icons-outlined">table_chart</span><span class="trunc">{{this}}</span></a></li>
+			{{else}}
+			<li><small class="empty">No tables</small></li>
+			{{/each}}
+		</ul>
 	</aside>
 	{{/if}}
 	<main data-workspace>

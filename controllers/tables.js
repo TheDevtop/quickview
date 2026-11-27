@@ -1,7 +1,6 @@
 const qt = require('../models/quicktable');
 
 const pagesize = 50;
-const sample = 100;
 const nvalue = ['exists', 'missing'];
 
 function bad(msg, status) {
@@ -263,19 +262,6 @@ async function create(req, res) {
 	}
 }
 
-// schema lists every column with the types seen in the first rows.
-async function schema(req, t) {
-	const [c, r] = await Promise.all([req.qt.scan({ table: t, columns: true }), req.qt.query({ table: t, limit: sample })]);
-	const seen = new Map();
-	for (const row of r.rows)
-		for (const [col, v] of Object.entries(row.row)) {
-			if (!seen.has(col))
-				seen.set(col, new Set());
-			seen.get(col).add(typeof_(v));
-		}
-	return c.names.sort().map((name) => ({ name, types: [...(seen.get(name) ?? [])].sort() }));
-}
-
 // preview pages by row key: from is the first key of the page.
 // One extra row tells whether there is a next page and where it starts;
 // a reverse scan up to from finds where the previous page starts.
@@ -320,13 +306,9 @@ function tableview(t, tab, form) {
 
 async function table(req, res) {
 	const t = req.params.table;
-	const v = tableview(t, req.query.tab ?? 'schema');
+	const v = tableview(t, req.query.tab ?? 'preview');
 
 	switch (v.tab) {
-	case 'schema':
-		v.schema = await schema(req, t);
-		v.sample = sample;
-		break;
 	case 'details':
 		await details(req, t, v);
 		break;
@@ -337,7 +319,7 @@ async function table(req, res) {
 		v.keys = (await req.qt.scan({ table: t })).names;
 		break;
 	}
-	if (['query', 'insert'].includes(v.tab))
+	if (['details', 'query', 'insert'].includes(v.tab))
 		v.colnames = (await req.qt.scan({ table: t, columns: true })).names.sort();
 	res.render('table', v);
 }
@@ -434,12 +416,13 @@ async function drop(req, res) {
 
 // dropcol deletes one column from every row of the table.
 async function dropcol(req, res) {
-	const { table: t, column: c } = req.params;
+	const t = req.params.table;
 	try {
+		const c = need(req.body.column, 'column');
 		await req.qt.batch({ ops: [{ op: 'delete', table: t, column: c }] });
-		back(res, tableurl(t, 'schema'), undefined, `Deleted column ${c} from every row`);
+		back(res, tableurl(t, 'details'), undefined, `Deleted column ${c} from every row`);
 	} catch (err) {
-		back(res, tableurl(t, 'schema'), err);
+		back(res, tableurl(t, 'details'), err);
 	}
 }
 

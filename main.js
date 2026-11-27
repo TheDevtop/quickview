@@ -134,7 +134,7 @@ app.get('/tables/:table/goto', tc.goto);
 app.post('/tables/:table/query', tc.query);
 app.post('/tables/:table/rows', tc.insert);
 app.post('/tables/:table/drop', tc.drop);
-app.post('/tables/:table/columns/:column/delete', tc.dropcol);
+app.post('/tables/:table/dropcol', tc.dropcol);
 app.get('/tables/:table/rows/:row', tc.row);
 app.post('/tables/:table/rows/:row', tc.setrow);
 app.post('/tables/:table/rows/:row/delete', tc.delrow);

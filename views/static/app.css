@@ -10,18 +10,16 @@ header[data-subheader] nav[aria-label="Breadcrumb"] a { color: var(--cc-text); }
 .cc-shell.bare { min-height: calc(100vh - 48px); }
 .cc-shell.bare > main { background-color: var(--cc-bg-subtle); }
 
-/* Explorer: BigQuery's resource panel with search and a server > tables tree. */
+/* Explorer: BigQuery's resource panel with search over the tables. */
 .explorer-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 8px 6px 16px; }
 .explorer-head h2 { margin: 0; font-size: 14px; font-weight: 500; }
 .explorer-search { margin: 4px 12px 8px; }
 .explorer-search .material-icons { font-size: 18px; color: var(--cc-text-secondary); }
-aside[data-sidebar] details[data-tree] > summary { font-weight: 500; }
-aside[data-sidebar] details[data-tree] > summary .material-icons-outlined,
 .tree-leaf .material-icons-outlined { font-size: 17px; color: var(--cc-text-secondary); }
 .tree-leaf[aria-selected="true"] .material-icons-outlined { color: var(--cc-link); }
 ul.tree { list-style: none; margin: 0; padding: 0 0 8px; }
-ul.tree .tree-leaf { justify-content: flex-start; padding-left: 32px; text-decoration: none; }
-aside[data-sidebar] .empty { display: block; padding: 5px 12px 5px 38px; color: var(--cc-text-muted); }
+ul.tree .tree-leaf { justify-content: flex-start; padding-left: 16px; text-decoration: none; }
+aside[data-sidebar] .empty { display: block; padding: 5px 16px; color: var(--cc-text-muted); }
 .trunc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 
 /* Workspace tab strip with "Compose new query" at its end. */
@@ -100,6 +98,7 @@ ul.keys li { padding: 2px 0; }
 	header[data-topbar] .addr { display: none; }
 	header[data-subheader] .product-title { display: none; }
 	header[data-subheader] .subheader-bar { padding: 8px 16px; }
+	ul.tree { max-height: 30vh; overflow-y: auto; }
 	nav[aria-label="Breadcrumb"] ul { flex-wrap: wrap; row-gap: 4px; }
 	.page { padding: 16px; }
 	form.editor { margin: -16px -16px 0; }
