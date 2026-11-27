@@ -49,4 +49,4 @@ function client(base, token) {
 	return c;
 }
 
-module.exports = { version, docs, ops, client };
+module.exports = { docs, ops, client };
