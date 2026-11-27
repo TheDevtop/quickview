@@ -1,0 +1,62 @@
+<section class="results">
+	<header>
+		<h3>Query results</h3>
+		<small class="cc-status-ready">Query complete ({{r.ms}} ms elapsed){{#unless (eq r.count undefined)}} · {{r.count}} results{{/unless}}</small>
+	</header>
+	<div role="tablist" data-cc-tabs>
+		<button type="button" role="tab" aria-selected="true" aria-controls="res-out">Results</button>
+		<button type="button" role="tab" aria-selected="false" aria-controls="res-json">JSON</button>
+		<button type="button" role="tab" aria-selected="false" aria-controls="res-exec">Execution details</button>
+	</div>
+	<div id="res-out" role="tabpanel">
+		{{#if r.grid}}
+		{{> grid r.grid}}
+		{{else if r.kv}}
+		<div class="table-wrap">
+		<table>
+			<thead><tr><th class="idx">Row</th><th>{{r.kv.head}}</th><th>value</th><th>type</th></tr></thead>
+			<tbody>
+				{{#each r.kv.list}}
+				<tr>
+					<td class="idx">{{inc @index}}</td>
+					<td>{{#if href}}<a href="{{href}}"><code>{{name}}</code></a>{{else}}<code>{{name}}</code>{{/if}}</td>
+					{{#if (eq type 'null')}}<td class="missing">null</td>{{else}}<td class="value{{#if (eq type 'number')}} num{{/if}}">{{v}}</td>{{/if}}
+					<td><span data-pill>{{type}}</span></td>
+				</tr>
+				{{else}}
+				<tr><td colspan="4" class="missing">No results</td></tr>
+				{{/each}}
+			</tbody>
+		</table>
+		</div>
+		{{else if r.names}}
+		<div class="table-wrap">
+		<table>
+			<thead><tr><th class="idx">Row</th><th>{{r.names.head}}</th></tr></thead>
+			<tbody>
+				{{#each r.names.list}}
+				<tr><td class="idx">{{inc @index}}</td><td>{{#if href}}<a href="{{href}}"><code>{{n}}</code></a>{{else}}<code>{{n}}</code>{{/if}}</td></tr>
+				{{else}}
+				<tr><td colspan="2" class="missing">No results</td></tr>
+				{{/each}}
+			</tbody>
+		</table>
+		</div>
+		{{else if r.value}}
+		<div class="scalar"><small>{{r.value.label}}</small><p class="big">{{r.value.v}}</p><span data-pill>{{r.value.type}}</span></div>
+		{{else}}
+		<div class="scalar"><p class="cc-status-ready">{{r.status}}</p></div>
+		{{/if}}
+	</div>
+	<div id="res-json" role="tabpanel" hidden>
+		<pre><code>{{json r.out}}</code></pre>
+	</div>
+	<div id="res-exec" role="tabpanel" hidden>
+		<dl class="exec">
+			<dt>Request</dt><dd><code>POST /api/{{r.op}}</code></dd>
+			<dt>Elapsed time</dt><dd>{{r.ms}} ms</dd>
+			{{#unless (eq r.count undefined)}}<dt>Results</dt><dd>{{r.count}}</dd>{{/unless}}
+		</dl>
+		<pre><code>{{json r.req}}</code></pre>
+	</div>
+</section>

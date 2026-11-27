@@ -1,17 +1,23 @@
 {{#section 'bar'}}
-<nav aria-label="Breadcrumb"><ul><li><h1>Tables</h1></li></ul></nav>
-<a role="button" class="ghost" href="/new"><span class="material-icons">add</span>Create table</a>
+<nav aria-label="Breadcrumb"><ul><li><h1>Explorer</h1></li></ul></nav>
+<span class="cc-row">
+	<a role="button" class="ghost" href="/editor"><span class="material-icons-outlined">search</span>Compose new query</a>
+	<a role="button" class="ghost" href="/new"><span class="material-icons">add</span>Create table</a>
+</span>
 {{/section}}
 
 <div class="panel">
 <div class="table-wrap">
 <table data-grid="clean">
-	<thead><tr><th>Name <small>({{tables.length}})</small></th></tr></thead>
+	<thead><tr><th>Table <small>({{tables.length}})</small></th><th></th></tr></thead>
 	<tbody>
 		{{#each tables}}
-		<tr><td><a href="/tables/{{u this}}" class="named"><span class="material-icons-outlined">table_chart</span>{{this}}</a></td></tr>
+		<tr>
+			<td><a href="/tables/{{u this}}" class="named"><span class="material-icons-outlined">table_chart</span>{{this}}</a></td>
+			<td class="num"><a href="/tables/{{u this}}?tab=preview">Preview</a> · <a href="/editor?table={{u this}}">Query</a></td>
+		</tr>
 		{{else}}
-		<tr><td class="missing">No tables yet. <a href="/new">Create the first one</a>; a table exists once it holds a cell.</td></tr>
+		<tr><td colspan="2" class="missing">No tables yet. <a href="/new">Create the first one</a>; a table exists once it holds a cell.</td></tr>
 		{{/each}}
 	</tbody>
 </table>

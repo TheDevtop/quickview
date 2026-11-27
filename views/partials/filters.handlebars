@@ -1,25 +1,24 @@
+<h5>Row keys</h5>
 <div class="fields">
-	<div><label>Key prefix</label><input name="prefix" value="{{form.prefix}}" placeholder="a3"></div>
-	<div><label>Start key (inclusive)</label><input name="startKey" value="{{form.startKey}}"></div>
-	<div><label>End key (inclusive)</label><input name="endKey" value="{{form.endKey}}"></div>
-	<div><label>Offset</label><input type="number" min="0" name="offset" value="{{form.offset}}"></div>
-	<div><label>Limit</label><input type="number" min="0" name="limit" value="{{form.limit}}"></div>
+	<div><label>Prefix</label><input name="prefix" value="{{form.prefix}}" placeholder="2026-11-"></div>
+	<div><label>From (inclusive)</label><input name="from" value="{{form.from}}"></div>
+	<div><label>To (exclusive)</label><input name="to" value="{{form.to}}"></div>
+	<div><label>Limit</label><input type="number" min="0" name="limit" value="{{form.limit}}" placeholder="no limit"></div>
 </div>
 <div class="cc-row gap">
-	<label class="check"><input type="checkbox" role="switch" name="orderDesc"{{#if (eq form.orderDesc 'on')}} checked{{/if}}>Descending key order</label>
+	<label class="check"><input type="checkbox" role="switch" name="reverse"{{#if (eq form.reverse 'on')}} checked{{/if}}>Descending key order</label>
 </div>
-<h5 class="gap">Filters</h5>
-<div class="pred-row grouped head"><small>Group</small><small>Column</small><small>Operator</small><small>Value</small><small>Type</small></div>
+<h5 class="gap">Where</h5>
+<div class="pred-row head"><small>Column</small><small>Comparison</small><small>Value</small><small>Type</small></div>
 <div class="preds">
 	{{#each where}}
-	<div class="pred-row grouped">
-		<input name="where[{{@index}}][group]" value="{{group}}" placeholder="1" aria-label="Group" inputmode="numeric">
+	<div class="pred-row">
 		<input name="where[{{@index}}][column]" value="{{column}}" placeholder="column" aria-label="Column" list="colnames">
-		{{> opsel n=(concat 'where[' @index '][op]') o=op}}
+		{{> cmpsel n=(concat 'where[' @index '][cmp]') o=cmp}}
 		<input name="where[{{@index}}][value]" value="{{value}}" placeholder="value" aria-label="Value">
 		{{> typesel n=(concat 'where[' @index '][type]') t=type}}
 	</div>
 	{{/each}}
 </div>
-<button type="button" class="ghost" data-add><span class="material-icons">add</span>Filter</button>
-<small class="hint">Filters in the same group must all match; a row matches if any group matches. EXISTS and MISSING ignore the value.</small>
+<button type="button" class="ghost" data-add><span class="material-icons">add</span>Condition</button>
+<small class="hint">Every condition must hold. A cell of another type than the value never matches; exists and missing ignore the value.</small>

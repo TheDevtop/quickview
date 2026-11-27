@@ -9,49 +9,85 @@ header[data-subheader] nav[aria-label="Breadcrumb"] a { color: var(--cc-text); }
 
 .cc-shell.bare { min-height: calc(100vh - 48px); }
 .cc-shell.bare > main { background-color: var(--cc-bg-subtle); }
-aside[data-sidebar] .empty { display: block; padding: 8px 16px; }
-details[data-nav-group] a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Explorer: BigQuery's resource panel with search and a server > tables tree. */
+.explorer-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 8px 6px 16px; }
+.explorer-head h2 { margin: 0; font-size: 14px; font-weight: 500; }
+.explorer-search { margin: 4px 12px 8px; }
+.explorer-search .material-icons { font-size: 18px; color: var(--cc-text-secondary); }
+aside[data-sidebar] details[data-tree] > summary { font-weight: 500; }
+aside[data-sidebar] details[data-tree] > summary .material-icons-outlined,
+.tree-leaf .material-icons-outlined { font-size: 17px; color: var(--cc-text-secondary); }
+.tree-leaf[aria-selected="true"] .material-icons-outlined { color: var(--cc-link); }
+ul.tree { list-style: none; margin: 0; padding: 0 0 8px; }
+ul.tree .tree-leaf { justify-content: flex-start; padding-left: 32px; text-decoration: none; }
+aside[data-sidebar] .empty { display: block; padding: 5px 12px 5px 38px; color: var(--cc-text-muted); }
+.trunc { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+
+/* Workspace tab strip with "Compose new query" at its end. */
+[data-workspace-tabbar] { flex-shrink: 0; }
+[data-workspace-tabbar] .ws-tab { text-decoration: none; text-transform: none; font-size: 12.5px; }
+[data-workspace-tabbar] .ws-tab .material-icons-outlined { font-size: 17px; }
+[data-workspace-tabbar] .compose { display: inline-flex; align-items: center; gap: 4px; padding: 0 14px; font-size: 12.5px; font-weight: 500; color: var(--cc-link); text-decoration: none; white-space: nowrap; }
+[data-workspace-tabbar] .compose:hover { background: rgba(0, 0, 0, 0.03); }
 
 main[data-workspace] > [role="tablist"] { flex-shrink: 0; }
 .page { padding: 16px 24px; }
 .gap { margin-top: 12px; }
 .narrow { max-width: 640px; }
 .connect { max-width: 480px; margin: 48px auto; }
-.big { font-size: 32px; margin: 0; }
+.big { font-size: 32px; margin: 0; font-family: var(--cc-font-mono); }
 .named { display: inline-flex; align-items: center; gap: 8px; }
 .cols + button[data-add],
 .preds + button[data-add] { margin-top: 4px; }
 .hint { display: block; margin-top: 6px; color: var(--cc-text-muted); }
 .reveal { display: grid; grid-template-columns: 1fr auto; gap: 4px; align-items: center; }
 .goto { display: inline-flex; align-items: center; gap: 4px; margin: 0; }
-.goto input { width: 150px; font-family: var(--cc-font-mono); }
-form.only { margin-bottom: 10px; }
-form.only input { flex: 1; max-width: 360px; }
-dl.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 8px 0 0; }
-dl.stats dt { color: var(--cc-text-muted); font-size: 12px; }
-dl.stats dd { margin: 0; font-size: 24px; font-family: var(--cc-font-mono); }
+.goto input { width: 160px; font-family: var(--cc-font-mono); }
 dd [data-pill] { margin: 0 4px 4px 0; }
+dl.info, dl.exec { display: grid; grid-template-columns: max-content 1fr; gap: 8px 32px; margin: 0; }
+dl.info dt, dl.exec dt { color: var(--cc-text-secondary); font-weight: 400; }
+dl.info dd, dl.exec dd { margin: 0; }
+dl.exec { margin-bottom: 12px; }
 
 article form footer { display: flex; justify-content: flex-end; gap: 8px; margin: 14px -16px -16px -16px; padding: 10px 16px; border-top: 1px solid var(--cc-border); background: var(--cc-bg-subtle); }
 article > header small { margin-left: auto; }
-article > [role="tablist"] { margin: -14px -16px 12px -16px; }
 td form { display: inline; }
-a[role="button"].ghost[aria-current] { background-color: var(--cc-primary-tint); }
 
 .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
 .cell-row,
 .pred-row { display: grid; gap: 8px; margin-bottom: 8px; align-items: start; }
 .cell-row { grid-template-columns: 1fr 2fr 100px; }
+.cell-row.wide { grid-template-columns: 1fr 100px; }
+.cell-row.pair { grid-template-columns: 1fr 1fr; }
 .pred-row { grid-template-columns: 1fr 120px 2fr 100px; }
-.pred-row.grouped { grid-template-columns: 64px 1fr 120px 2fr 100px; }
 .pred-row.head { margin-bottom: 2px; color: var(--cc-text-muted); }
 label.check { display: inline-flex; align-items: center; margin: 0 16px 0 0; color: var(--cc-text); font-weight: 400; }
-textarea.mono { font-family: var(--cc-font-mono); font-size: 12.5px; }
+
+/* Editor: toolbar above a gutter and text area, as in the BigQuery query editor. */
+form.editor { margin: -16px -24px 0; }
+.editor-bar { display: flex; align-items: center; gap: 12px; padding: 8px 16px; flex-wrap: wrap; }
+.editor-bar label.op { display: inline-flex; align-items: center; gap: 2px; margin: 0; font-family: var(--cc-font-mono); font-size: 12.5px; color: var(--cc-text-secondary); }
+.editor-bar label.op select { width: auto; font-family: var(--cc-font-mono); }
+.editor-bar .hint { margin: 0 0 0 auto; }
+.cc-sql-editor { align-items: stretch; }
+.cc-sql-gutter { margin: 0; border-radius: 0; font: inherit; line-height: 1.55; overflow: hidden; }
+.cc-sql-input { overflow: auto; white-space: pre; }
+.cc-split-divider { margin: 0 -24px 16px; }
+
+/* Results panel. */
+section.results { border: 1px solid var(--cc-border); border-radius: var(--cc-radius-md); overflow: hidden; margin-bottom: 16px; }
+section.results > header { display: flex; align-items: center; gap: 16px; padding: 10px 16px; }
+section.results > header h3 { margin: 0; font-size: 14px; font-weight: 500; }
+section.results [role="tabpanel"] > pre { margin: 0; border-radius: 0; border: none; max-height: 60vh; overflow: auto; }
+section.results [role="tabpanel"] > dl { padding: 12px 16px 0; }
+.scalar { padding: 16px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.scalar small { color: var(--cc-text-secondary); }
 
 .panel { border: 1px solid var(--cc-border); border-radius: var(--cc-radius-md); overflow: hidden; }
-.table-wrap { max-height: 65vh; overflow: auto; }
-td.missing { color: var(--cc-text-muted); font-style: italic; }
-th.idx, td.idx { color: var(--cc-text-muted); width: 1%; }
+.table-wrap { max-height: 65vh; overflow: auto; font-weight: 400; }
+td.missing, span.missing { color: var(--cc-text-muted); font-style: italic; }
+th.idx, td.idx { color: var(--cc-text-muted); width: 1%; text-align: right; }
 td.value { font-family: var(--cc-font-mono); white-space: pre-wrap; word-break: break-all; }
 td.num button.icon { width: 26px; height: 26px; }
 
@@ -66,14 +102,17 @@ ul.keys li { padding: 2px 0; }
 	header[data-subheader] .subheader-bar { padding: 8px 16px; }
 	nav[aria-label="Breadcrumb"] ul { flex-wrap: wrap; row-gap: 4px; }
 	.page { padding: 16px; }
-	.pred-row,
-	.pred-row.grouped { grid-template-columns: 1fr 1fr; }
+	form.editor { margin: -16px -16px 0; }
+	.cc-split-divider { margin: 0 -16px 16px; }
+	.pred-row { grid-template-columns: 1fr 1fr; }
 	.pred-row.head { display: none; }
 	.goto input { width: 110px; }
 	[role="tablist"] { overflow-x: auto; }
 	[role="tab"] { flex-shrink: 0; white-space: nowrap; }
+	[data-workspace-tabbar] .ws-tab { min-width: 0; }
 }
 
 @media (max-width: 480px) {
 	header[data-topbar] .wide { display: none; }
+	.editor-bar .hint { display: none; }
 }

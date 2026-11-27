@@ -1,44 +1,92 @@
 {{#section 'bar'}}
 <nav aria-label="Breadcrumb"><ul>
-	<li><a href="/">Tables</a></li>
+	<li><a href="/">Explorer</a></li>
 	<li><span class="breadcrumb-stack"><small>Table</small>{{table}}</span></li>
 </ul></nav>
 <span class="cc-row">
 	<form method="get" action="/tables/{{u table}}/goto" class="goto">
 		<input type="hidden" name="tab" value="{{tab}}">
-		<input name="key" placeholder="Go to row key" aria-label="Row key" pattern="[0-9a-fA-F]{8}" maxlength="8" title="8 hexadecimal characters" required>
+		<input name="key" placeholder="Go to row key" aria-label="Row key" required>
 		<button type="submit" class="icon" aria-label="Go to row"><span class="material-icons">arrow_forward</span></button>
 	</form>
+	<a role="button" class="ghost" href="/editor?table={{u table}}"><span class="material-icons-outlined">search</span>Query</a>
+	<a role="button" class="ghost" href="/tables/{{u table}}?tab=insert"><span class="material-icons">add</span>Insert row</a>
 	<a role="button" class="ghost" href="/tables/{{u table}}?tab={{tab}}"><span class="material-icons">refresh</span>Refresh</a>
 </span>
 {{/section}}
 
 {{#section 'tabs'}}
 <nav role="tablist" aria-label="Table views">
+	<a role="tab" href="/tables/{{u table}}?tab=schema" aria-selected="{{eq tab 'schema'}}">Schema</a>
+	<a role="tab" href="/tables/{{u table}}?tab=details" aria-selected="{{eq tab 'details'}}">Details</a>
 	<a role="tab" href="/tables/{{u table}}?tab=preview" aria-selected="{{eq tab 'preview'}}">Preview</a>
 	<a role="tab" href="/tables/{{u table}}?tab=keys" aria-selected="{{eq tab 'keys'}}">Row keys</a>
 	<a role="tab" href="/tables/{{u table}}?tab=query" aria-selected="{{eq tab 'query'}}">Query</a>
 	<a role="tab" href="/tables/{{u table}}?tab=insert" aria-selected="{{eq tab 'insert'}}">Insert row</a>
-	<a role="tab" href="/tables/{{u table}}?tab=batch" aria-selected="{{eq tab 'batch'}}">Batch</a>
-	<a role="tab" href="/tables/{{u table}}?tab=delete" aria-selected="{{eq tab 'delete'}}">Delete rows</a>
-	<a role="tab" href="/tables/{{u table}}?tab=details" aria-selected="{{eq tab 'details'}}">Details</a>
 </nav>
 {{/section}}
 
 {{#if colnames}}<datalist id="colnames">{{#each colnames}}<option value="{{this}}">{{/each}}</datalist>{{/if}}
 
+{{#if (eq tab 'schema')}}
+<div class="panel">
+<div class="table-wrap">
+<table data-grid="clean">
+	<thead><tr><th>Field name</th><th>Type</th><th></th></tr></thead>
+	<tbody>
+		{{#each schema}}
+		<tr>
+			<td><code>{{name}}</code></td>
+			<td>{{#each types}}<span data-pill>{{this}}</span> {{else}}<span class="missing">not in sample</span>{{/each}}</td>
+			<td class="num">
+				<form method="post" action="/tables/{{u ../table}}/columns/{{u name}}/delete" data-confirm="Delete column {{name}} from every row of {{../table}}?">
+					<button type="submit" class="icon" aria-label="Delete {{name}}" data-tooltip="Delete from every row"><span class="material-icons-outlined">delete</span></button>
+				</form>
+			</td>
+		</tr>
+		{{else}}
+		<tr><td colspan="3" class="missing">No columns</td></tr>
+		{{/each}}
+	</tbody>
+</table>
+</div>
+</div>
+<small class="hint">Rows need not share columns. Types are those seen in the first {{sample}} rows.</small>
+{{/if}}
+
+{{#if (eq tab 'details')}}
+<article>
+	<header><h3>Table info</h3></header>
+	<dl class="info">
+		<dt>Table ID</dt><dd><code>{{table}}</code></dd>
+		<dt>Server</dt><dd><code>{{base}}</code></dd>
+		<dt>Number of rows</dt><dd>{{count}}</dd>
+		<dt>First row key</dt><dd>{{#if firstkey}}<a href="/tables/{{u table}}/rows/{{u firstkey}}"><code>{{firstkey}}</code></a>{{else}}<span class="missing">none</span>{{/if}}</dd>
+		<dt>Last row key</dt><dd>{{#if lastkey}}<a href="/tables/{{u table}}/rows/{{u lastkey}}"><code>{{lastkey}}</code></a>{{else}}<span class="missing">none</span>{{/if}}</dd>
+	</dl>
+</article>
+<article>
+	<header><h3>Delete table</h3><span data-pill data-badge="danger">Cannot be undone</span></header>
+	<p>Permanently removes <strong>{{table}}</strong> and all of its rows. Type the table name to confirm.</p>
+	<form method="post" action="/tables/{{u table}}/drop">
+		<input name="confirm" placeholder="{{table}}" aria-label="Confirm table name" required>
+		<footer><button type="submit" class="danger"><span class="material-icons-outlined">delete_forever</span>Delete table</button></footer>
+	</form>
+</article>
+{{/if}}
+
 {{#if (eq tab 'preview')}}
 <div class="panel">
 	{{> grid grid}}
 	<div class="cc-pagination">
-		<span>Rows {{from}} – {{to}} of {{total}}</span>
-		{{#if (eq prev undefined)}}
-		<a role="button" class="icon" aria-disabled="true" aria-label="Previous page"><span class="material-icons">chevron_left</span></a>
+		<span>{{#if first}}Keys <code>{{first}}</code> – <code>{{last}}</code> · {{/if}}{{total}} rows</span>
+		{{#if hasprev}}
+		<a role="button" class="icon" href="/tables/{{u table}}?tab=preview{{#if prev}}&from={{u prev}}{{/if}}" aria-label="Previous page"><span class="material-icons">chevron_left</span></a>
 		{{else}}
-		<a role="button" class="icon" href="/tables/{{u table}}?tab=preview&page={{prev}}" aria-label="Previous page"><span class="material-icons">chevron_left</span></a>
+		<a role="button" class="icon" aria-disabled="true" aria-label="Previous page"><span class="material-icons">chevron_left</span></a>
 		{{/if}}
 		{{#if next}}
-		<a role="button" class="icon" href="/tables/{{u table}}?tab=preview&page={{next}}" aria-label="Next page"><span class="material-icons">chevron_right</span></a>
+		<a role="button" class="icon" href="/tables/{{u table}}?tab=preview&from={{u next}}" aria-label="Next page"><span class="material-icons">chevron_right</span></a>
 		{{else}}
 		<a role="button" class="icon" aria-disabled="true" aria-label="Next page"><span class="material-icons">chevron_right</span></a>
 		{{/if}}
@@ -57,147 +105,35 @@
 
 {{#if (eq tab 'query')}}
 <article>
-	<header>
-		<h3>Query editor</h3>
-		<span class="cc-row">
-			<a role="button" class="ghost" href="/tables/{{u table}}?tab=query"{{#if (eq mode 'builder')}} aria-current="page"{{/if}}>Builder</a>
-			<a role="button" class="ghost" href="/tables/{{u table}}?tab=query&mode=json"{{#if (eq mode 'json')}} aria-current="page"{{/if}}>JSON</a>
-		</span>
-	</header>
+	<header><h3>Query builder</h3><small>Builds a <code>POST /api/query</code> request</small></header>
 	<form method="post" action="/tables/{{u table}}/query">
-		<input type="hidden" name="mode" value="{{mode}}">
-		{{#if (eq mode 'json')}}
-		<textarea class="mono" name="json" rows="14" aria-label="Query JSON" placeholder='{ "prefix": "a3", "select": ["email"], "or": [[{ "column": "age", "op": ">=", "value": 18 }], [{ "column": "age", "op": "MISSING" }]], "limit": 50 }'>{{form.json}}</textarea>
-		<small class="hint">Fields: prefix, startKey, endKey, select, orderDesc, offset, limit, where, or, countOnly, aggregate.</small>
-		{{else}}
-		<div class="fields">
-			<div><label>Select columns</label><input name="select" value="{{form.select}}" placeholder="all columns; or email, age"></div>
-			<div><label>Aggregate column</label><input name="aggregate" value="{{form.aggregate}}" placeholder="numeric column for count, sum, min, max, avg" list="colnames"></div>
-		</div>
-		<div class="cc-row gap">
-			<label class="check"><input type="checkbox" role="switch" name="countOnly"{{#if (eq form.countOnly 'on')}} checked{{/if}}>Count only</label>
-		</div>
 		{{> filters}}
-		{{/if}}
-		<footer><button type="submit"><span class="material-icons">play_arrow</span>Run</button></footer>
+		<h5 class="gap">Result</h5>
+		<div class="fields">
+			<div><label>Select columns</label><input name="select" value="{{form.select}}" placeholder="all; or name, age"></div>
+			<div><label>Aggregate</label>
+				<select name="agg"><option value="">none — return rows</option>{{#each aggs}}<option{{#if (eq this ../form.agg)}} selected{{/if}}>{{this}}</option>{{/each}}</select>
+			</div>
+			<div><label>Aggregate column</label><input name="column" value="{{form.column}}" placeholder="for sum, avg, min, max" list="colnames"></div>
+		</div>
+		<footer>
+			<button type="submit" name="do" value="editor" class="secondary"><span class="material-icons">code</span>Open in editor</button>
+			<button type="submit" name="do" value="run"><span class="material-icons">play_arrow</span>Run</button>
+		</footer>
 	</form>
 </article>
+{{#if r}}{{> results r=r}}{{/if}}
 {{/if}}
 
 {{#if (eq tab 'insert')}}
 <article>
-	<header><h3>Insert row</h3><small>The row key is generated by the server</small></header>
+	<header><h3>Insert row</h3><small>Writing to an existing key merges into that row</small></header>
 	<form method="post" action="/tables/{{u table}}/rows">
+		<label for="key">Row key</label>
+		<input id="key" name="key" required placeholder="ann" pattern="\S+" title="No whitespace">
+		<h5 class="gap">Columns</h5>
 		{{> cols list=cols n="cols"}}
 		<footer><button type="submit"><span class="material-icons">add</span>Insert</button></footer>
 	</form>
-</article>
-{{/if}}
-
-{{#if (eq tab 'batch')}}
-<article>
-	<header><h3>Batch operation</h3></header>
-	<form method="post" action="/tables/{{u table}}/batch">
-		<label for="action">Action</label>
-		<select id="action" name="action" data-batch>
-			<option value="get"{{#if (eq form.action 'get')}} selected{{/if}}>get — read rows by key</option>
-			<option value="delete"{{#if (eq form.action 'delete')}} selected{{/if}}>delete — delete rows by key</option>
-			<option value="write"{{#if (eq form.action 'write')}} selected{{/if}}>write — apply mutations atomically</option>
-			<option value="insert"{{#if (eq form.action 'insert')}} selected{{/if}}>insert — insert rows with generated keys</option>
-		</select>
-		<div data-action="get delete">
-		<label for="rowKeys" class="gap">Row keys — whitespace or comma separated</label>
-		<textarea id="rowKeys" class="mono" name="rowKeys" rows="3" placeholder="a3f10c2b d81c4f9a">{{form.rowKeys}}</textarea>
-		</div>
-		<div data-action="write">
-		<label for="mutations" class="gap">Mutations — JSON array</label>
-		<textarea id="mutations" class="mono" name="mutations" rows="8" placeholder='[
-  { "rowKey": "a3f10c2b", "setCols": { "score": 100 } },
-  { "rowKey": "d81c4f9a", "delCols": ["temp_field"] },
-  { "rowKey": "ff001122", "delete": true }
-]'>{{form.mutations}}</textarea>
-		</div>
-		<div data-action="insert">
-		<label for="rows" class="gap">Rows — JSON array of column objects</label>
-		<textarea id="rows" class="mono" name="rows" rows="6" placeholder='[
-  { "email": "alice@example.com", "score": 0 },
-  { "email": "bob@example.com" }
-]'>{{form.rows}}</textarea>
-		</div>
-		<footer><button type="submit"><span class="material-icons">play_arrow</span>Run batch</button></footer>
-	</form>
-</article>
-{{/if}}
-
-{{#if (eq tab 'delete')}}
-<article>
-	<header><h3>Delete rows</h3><span data-pill data-badge="danger">Cannot be undone</span></header>
-	<p>Deletes every row matching the filters in one transaction. Preview shows the rows that would be deleted. Very large deletes can fail as a whole; use Limit to delete in chunks.</p>
-	<form method="post" action="/tables/{{u table}}/delete">
-		{{> filters}}
-		<div class="cc-row gap">
-			<label class="check"><input type="checkbox" role="switch" name="all">Delete every row when no filters are given</label>
-		</div>
-		<footer>
-			<button type="submit" name="do" value="preview" class="secondary"><span class="material-icons">visibility</span>Preview</button>
-			<button type="submit" name="do" value="delete" class="danger"><span class="material-icons-outlined">delete_sweep</span>Delete matching</button>
-		</footer>
-	</form>
-</article>
-{{/if}}
-
-{{#if (eq tab 'details')}}
-<article>
-	<header><h3>Table details</h3></header>
-	<dl>
-		<dt>Table name</dt><dd>{{table}}</dd>
-		<dt>Server</dt><dd><code>{{base}}</code></dd>
-		<dt>Columns</dt><dd>{{#each colnames}}<span data-pill>{{this}}</span> {{else}}<span class="missing">None</span>{{/each}}</dd>
-	</dl>
-</article>
-<article>
-	<header><h3>Drop table</h3><span data-pill data-badge="danger">Cannot be undone</span></header>
-	<p>Permanently removes <strong>{{table}}</strong> and all of its rows. Type the table name to confirm.</p>
-	<form method="post" action="/tables/{{u table}}/drop">
-		<input name="confirm" placeholder="{{table}}" aria-label="Confirm table name" required>
-		<footer><button type="submit" class="danger"><span class="material-icons-outlined">delete_forever</span>Drop table</button></footer>
-	</form>
-</article>
-{{/if}}
-
-{{#if reqbody}}
-<article>
-	<header>
-		<h3>{{#if preview}}Rows that would be deleted{{else}}Results{{/if}}</h3>
-		{{#if elapsed}}<small class="cc-status-ready">Query complete ({{elapsed}} ms elapsed){{#unless (eq result.count undefined)}} · {{result.count}} rows{{/unless}}</small>{{/if}}
-	</header>
-	<div role="tablist" data-cc-tabs>
-		<button type="button" role="tab" aria-selected="true" aria-controls="res-out">Results</button>
-		<button type="button" role="tab" aria-selected="false" aria-controls="res-json">JSON</button>
-	</div>
-	<div id="res-out" role="tabpanel">
-		{{#if inserted}}
-		<small>Inserted {{inserted.length}} rows</small>
-		<ul class="keys">
-			{{#each inserted}}<li><a href="{{href}}"><code>{{key}}</code></a></li>{{/each}}
-		</ul>
-		{{else if grid}}
-		{{> grid grid}}
-		{{else if result.stats}}
-		<small>Over {{result.stats.count}} numeric values of <strong>{{result.column}}</strong></small>
-		<dl class="stats">
-			<div><dt>Sum</dt><dd>{{result.stats.sum}}</dd></div>
-			<div><dt>Average</dt><dd>{{result.stats.avg}}</dd></div>
-			<div><dt>Minimum</dt><dd>{{result.stats.min}}</dd></div>
-			<div><dt>Maximum</dt><dd>{{result.stats.max}}</dd></div>
-		</dl>
-		{{else if (eq result.status undefined)}}
-		<p class="big">{{result.count}}</p><small>matching rows</small>
-		{{/if}}
-	</div>
-	<div id="res-json" role="tabpanel" hidden>
-		<h6>Request</h6><pre><code>{{json reqbody}}</code></pre>
-		<h6>Response</h6><pre><code>{{json result}}</code></pre>
-	</div>
 </article>
 {{/if}}
